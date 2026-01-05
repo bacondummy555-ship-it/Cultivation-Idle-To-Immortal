@@ -22,15 +22,40 @@
 </head>
 <body class="p-4 transition-colors duration-1000">
 
+    <div id="technique-screen" class="fixed inset-0 bg-black/95 z-[60] hidden flex-col items-center justify-center p-6 text-center">
+        <h2 class="text-4xl font-bold text-purple-500 mb-2">Choose Your Technique</h2>
+        <p class="text-gray-400 mb-8 italic text-sm">This path will define your current incarnation.</p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl">
+            <div class="mystic-border p-6 rounded-2xl hover:border-blue-500 transition cursor-pointer" onclick="game.setTechnique('turtle')">
+                <h3 class="text-blue-400 font-bold text-xl mb-2">Steady Turtle</h3>
+                <p class="text-xs text-gray-500 mb-4">Focus on safety. Higher breakthrough chance, but slower Qi absorption.</p>
+                <div class="text-green-400 text-sm">+50% Success Rate</div>
+                <div class="text-red-400 text-sm">-30% Qi Speed</div>
+            </div>
+            <div class="mystic-border p-6 rounded-2xl hover:border-yellow-500 transition cursor-pointer" onclick="game.setTechnique('dao')">
+                <h3 class="text-yellow-500 font-bold text-xl mb-2">Balanced Dao</h3>
+                <p class="text-xs text-gray-500 mb-4">The middle path. Standard progression as intended by heaven.</p>
+                <div class="text-blue-400 text-sm">No Bonuses</div>
+                <div class="text-blue-400 text-sm">No Penalties</div>
+            </div>
+            <div class="mystic-border p-6 rounded-2xl hover:border-red-600 transition cursor-pointer" onclick="game.setTechnique('phoenix')">
+                <h3 class="text-red-500 font-bold text-xl mb-2">Raging Phoenix</h3>
+                <p class="text-xs text-gray-500 mb-4">High risk, high reward. Rapid growth but the heavens are cruel.</p>
+                <div class="text-green-400 text-sm">+100% Qi Speed</div>
+                <div class="text-red-400 text-sm">-20% Success Rate</div>
+            </div>
+        </div>
+    </div>
+
     <div id="reincarnation-screen" class="fixed inset-0 bg-black z-50 hidden flex-col items-center justify-center p-6 text-center">
         <h2 class="text-6xl font-bold text-yellow-500 mb-4">Life Exhausted</h2>
         <p class="text-xl text-gray-400 mb-8 italic" id="death-msg"></p>
         <div class="text-2xl mb-8">Karma Earned: <span id="karma-gain" class="text-green-400 font-bold">0</span></div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
-            <button onclick="game.reincarnate(1, 0)" class="p-4 border border-gray-700 hover:border-purple-500 rounded-xl">Mortal Root (1x Speed) - 0 Karma</button>
-            <button onclick="game.reincarnate(3, 200)" class="p-4 border border-gray-700 hover:border-purple-500 rounded-xl">Earth Root (3x Speed) - 200 Karma</button>
-            <button onclick="game.reincarnate(10, 1000)" class="p-4 border border-gray-700 hover:border-purple-500 rounded-xl">Heavenly Root (10x Speed) - 1000 Karma</button>
-            <button onclick="game.reincarnate(50, 5000)" class="p-4 border border-gray-700 hover:border-purple-500 rounded-xl">Divine Root (50x Speed) - 5000 Karma</button>
+            <button onclick="game.reincarnate(1, 0)" class="p-4 border border-gray-700 hover:border-purple-500 rounded-xl">Mortal Root (1x) - 0 K</button>
+            <button onclick="game.reincarnate(3, 200)" class="p-4 border border-gray-700 hover:border-purple-500 rounded-xl">Earth Root (3x) - 200 K</button>
+            <button onclick="game.reincarnate(10, 1000)" class="p-4 border border-gray-700 hover:border-purple-500 rounded-xl">Heavenly Root (10x) - 1000 K</button>
+            <button onclick="game.reincarnate(50, 5000)" class="p-4 border border-gray-700 hover:border-purple-500 rounded-xl">Divine Root (50x) - 5000 K</button>
         </div>
     </div>
 
@@ -50,6 +75,7 @@
             <div>
                 <h1 class="text-4xl font-black uppercase tracking-widest text-white">Daoist <span id="p-name" class="text-purple-500">...</span></h1>
                 <p id="p-realm" class="text-yellow-500 font-bold text-xl uppercase">Mortal</p>
+                <p id="p-tech" class="text-[10px] text-gray-400 tracking-tighter italic uppercase"></p>
             </div>
             <div class="flex gap-8 text-center bg-gray-900/50 p-4 rounded-2xl border border-white/5">
                 <div><p class="text-[10px] text-gray-500 uppercase">Lifespan</p><p class="font-mono text-lg"><span id="age">18</span>/<span id="maxAge">100</span></p></div>
@@ -74,18 +100,12 @@
                 
                 <div class="grid grid-cols-1 gap-3">
                     <button onclick="game.buyUpgrade('spirit')" class="mystic-border p-4 rounded-xl flex justify-between items-center hover:bg-purple-900/20 transition">
-                        <div class="text-left">
-                            <p class="font-bold text-purple-300">Gathering Array</p>
-                            <p class="text-[10px] text-gray-500">Increase Absorption</p>
-                        </div>
-                        <span id="cost-spirit" class="text-yellow-500 font-mono">10</span>
+                        <div class="text-left"><p class="font-bold text-purple-300">Gathering Array</p></div>
+                        <span id="cost-spirit" class="text-yellow-500 font-mono text-xs">10</span>
                     </button>
                     <button onclick="game.buyUpgrade('tech')" class="mystic-border p-4 rounded-xl flex justify-between items-center hover:bg-orange-900/20 transition">
-                        <div class="text-left">
-                            <p class="font-bold text-orange-400">Mental Method</p>
-                            <p class="text-[10px] text-gray-500">Multiply Gains</p>
-                        </div>
-                        <span id="cost-tech" class="text-yellow-500 font-mono">50</span>
+                        <div class="text-left"><p class="font-bold text-orange-400">Mental Method</p></div>
+                        <span id="cost-tech" class="text-yellow-500 font-mono text-xs">50</span>
                     </button>
                 </div>
             </div>
@@ -101,15 +121,15 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="mystic-border p-4 rounded-2xl bg-black/20">
+                    <div class="mystic-border p-4 rounded-2xl bg-black/20 h-64 overflow-hidden flex flex-col">
                         <h3 class="text-[10px] font-bold text-gray-600 uppercase mb-2">Daoist Records</h3>
-                        <div id="log" class="h-48 overflow-y-auto text-[11px] space-y-1 font-mono text-gray-400"></div>
+                        <div id="log" class="flex-grow overflow-y-auto text-[11px] space-y-1 font-mono text-gray-400"></div>
                     </div>
                     <div class="mystic-border p-4 rounded-2xl flex flex-col h-64">
                         <h2 class="text-[10px] font-bold uppercase text-gray-600 mb-2">World Transmission</h2>
                         <div id="chat" class="flex-grow overflow-y-auto space-y-2 mb-2 text-xs"></div>
                         <form id="chat-form" class="flex gap-2">
-                            <input id="chat-input" type="text" placeholder="..." class="bg-black/50 border border-white/10 rounded p-1 flex-grow outline-none text-xs">
+                            <input id="chat-input" type="text" class="bg-black/50 border border-white/10 rounded p-1 flex-grow outline-none text-xs">
                             <button class="bg-purple-600 px-2 rounded font-bold text-[10px]">SEND</button>
                         </form>
                     </div>
@@ -117,10 +137,8 @@
             </div>
 
             <div class="mystic-border p-6 rounded-2xl">
-                <h2 class="text-sm font-bold uppercase text-purple-400 mb-4 border-b border-purple-900/50 pb-2">Immortal Rankings</h2>
-                <ul id="leaderboard-list" class="space-y-3">
-                    <li class="text-center text-gray-600 text-xs py-4 italic">Fetching Daoists...</li>
-                </ul>
+                <h2 class="text-sm font-bold uppercase text-purple-400 mb-4 border-b border-purple-900/50 pb-2 text-center">Leaderboard</h2>
+                <ul id="leaderboard-list" class="space-y-3"></ul>
             </div>
         </div>
     </div>
@@ -140,13 +158,14 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const SAVE_KEY = "ImmortalSovereign_V6";
+        const SAVE_KEY = "ImmortalSovereign_V6_Final";
 
         const game = {
             state: {
                 name: "", qi: 0, realmIdx: 0, age: 18, maxAge: 100,
                 upgrades: { spirit: 0, tech: 0 },
-                karma: 0, rootMult: 1, lastTick: Date.now()
+                karma: 0, rootMult: 1, lastTick: Date.now(),
+                technique: "dao" // default
             },
             realms: [
                 "Mortal Body", "Refined Body", "Tempered Flesh", "Bone Forging", "Blood Circulation", "Muscle Cleansing", "Meridian Awakening", "Qi Sense", "Qi Initiation", "Qi Condensation", "Qi Gathering", "Qi Foundation", "Qi Stabilization",
@@ -171,24 +190,45 @@
                 
                 this.setupNetwork();
                 this.listenToLeaderboard();
+                if (!this.state.techniqueChosen) {
+                   document.getElementById('technique-screen').style.display = 'flex';
+                }
                 setInterval(() => this.tick(), 100);
                 setInterval(() => this.randomEvent(), 45000);
                 this.render();
             },
 
+            setTechnique(type) {
+                this.state.technique = type;
+                this.state.techniqueChosen = true;
+                document.getElementById('technique-screen').style.display = 'none';
+                this.addLog(`Adopted the Path of the ${type.toUpperCase()}.`);
+                localStorage.setItem(SAVE_KEY, JSON.stringify(this.state));
+            },
+
             tick() {
                 const dt = (Date.now() - this.state.lastTick) / 1000;
                 this.state.lastTick = Date.now();
-                const rate = (1 + this.state.upgrades.spirit) * (1 + this.state.upgrades.tech * 2) * Math.pow(1.5, this.state.realmIdx) * this.state.rootMult;
+                
+                let techRate = 1;
+                if(this.state.technique === 'turtle') techRate = 0.7;
+                if(this.state.technique === 'phoenix') techRate = 2.0;
+
+                const rate = (1 + this.state.upgrades.spirit) * (1 + this.state.upgrades.tech * 2) * Math.pow(1.5, this.state.realmIdx) * this.state.rootMult * techRate;
                 const currentReq = this.realms[this.state.realmIdx].req;
+                
                 this.state.qi = Math.min(currentReq, this.state.qi + (rate * dt));
                 this.state.age += dt / 60;
+                
                 if (this.state.age >= this.state.maxAge) this.die();
                 this.render(rate);
             },
 
             manualMeditate() {
-                const power = (10 + (this.state.realmIdx * 50)) * this.state.rootMult;
+                let techRate = 1;
+                if(this.state.technique === 'turtle') techRate = 0.7;
+                if(this.state.technique === 'phoenix') techRate = 2.0;
+                const power = (10 + (this.state.realmIdx * 50)) * this.state.rootMult * techRate;
                 this.state.qi = Math.min(this.realms[this.state.realmIdx].req, this.state.qi + power);
             },
 
@@ -197,24 +237,27 @@
                 if (this.state.qi >= cost) {
                     this.state.qi -= cost;
                     this.state.upgrades[type]++;
-                    this.addLog(`Purchased ${type} upgrade.`);
                 }
             },
 
             async breakthrough() {
                 const r = this.realms[this.state.realmIdx];
+                let successMod = 1;
+                if(this.state.technique === 'turtle') successMod = 1.5;
+                if(this.state.technique === 'phoenix') successMod = 0.8;
+
                 document.body.classList.add('strike');
                 setTimeout(() => document.body.classList.remove('strike'), 400);
 
-                if (Math.random() <= r.chance) {
+                if (Math.random() <= (r.chance * successMod)) {
                     this.state.realmIdx++;
                     this.state.qi = 0;
                     this.state.maxAge += 50;
-                    this.addLog(`<span class="text-yellow-400 font-bold">★ Breakthrough to ${this.realms[this.state.realmIdx].name}!</span>`);
+                    this.addLog(`<span class="text-yellow-400">★ Breakthrough: ${this.realms[this.state.realmIdx].name}</span>`);
                     await addDoc(collection(db, "highscores"), { player: this.state.name, realm: this.realms[this.state.realmIdx].name, level: this.state.realmIdx, createdAt: serverTimestamp() });
                 } else {
                     this.state.qi *= 0.5;
-                    this.addLog(`<span class="text-red-500">⚡ Lightning Strike! Qi scattered.</span>`);
+                    this.addLog(`<span class="text-red-500">⚡ Tribulation Failure! Qi scattered.</span>`);
                 }
                 localStorage.setItem(SAVE_KEY, JSON.stringify(this.state));
             },
@@ -222,8 +265,8 @@
             randomEvent() {
                 const modal = document.getElementById('event-modal');
                 const events = [
-                    { t: "Ancient Ruins", d: "Study jade slip?", o1: "Study (Qi)", o2: "Ignore (Karma)", r1: () => this.state.qi += 500, r2: () => this.state.karma += 50 },
-                    { t: "Rival Daoist", d: "A challenge!", o1: "Fight (Qi Risk)", o2: "Flee (Age)", r1: () => Math.random() > 0.5 ? this.state.qi *= 2 : this.state.qi *= 0.1, r2: () => this.state.age += 5 }
+                    { t: "Sacred Herb", d: "Consume it?", o1: "Eat (Qi)", o2: "Plant (Karma)", r1: () => this.state.qi += 1000, r2: () => this.state.karma += 100 },
+                    { t: "Daoist Debate", d: "Challenge an Elder?", o1: "Debate (Root Gain)", o2: "Bows (Lifespan)", r1: () => this.state.rootMult += 0.1, r2: () => this.state.maxAge += 10 }
                 ];
                 const e = events[Math.floor(Math.random() * events.length)];
                 document.getElementById('event-title').innerText = e.t;
@@ -239,32 +282,38 @@
                 const gain = this.state.realmIdx * 20;
                 this.state.karma += gain;
                 document.getElementById('reincarnation-screen').style.display = 'flex';
-                document.getElementById('death-msg').innerText = `${this.state.name} perished as ${this.realms[this.state.realmIdx].name}.`;
+                document.getElementById('death-msg').innerText = `${this.state.name} has died.`;
                 document.getElementById('karma-gain').innerText = gain;
             },
 
             reincarnate(mult, cost) {
-                if (this.state.karma < cost) return alert("Not enough Karma!");
+                if (this.state.karma < cost) return alert("Low Karma!");
                 this.state.karma -= cost;
                 this.state.rootMult = mult;
                 this.state.age = 18; this.state.maxAge = 100; this.state.realmIdx = 0; this.state.qi = 0;
                 this.state.upgrades = { spirit: 0, tech: 0 };
+                this.state.techniqueChosen = false;
                 document.getElementById('reincarnation-screen').style.display = 'none';
-                localStorage.setItem(SAVE_KEY, JSON.stringify(this.state));
+                document.getElementById('technique-screen').style.display = 'flex';
             },
 
             render(rate = 0) {
                 const r = this.realms[this.state.realmIdx];
+                let successMod = 1;
+                if(this.state.technique === 'turtle') successMod = 1.5;
+                if(this.state.technique === 'phoenix') successMod = 0.8;
+
                 document.getElementById('p-name').innerText = this.state.name;
                 document.getElementById('p-realm').innerText = r.name;
+                document.getElementById('p-tech').innerText = "Path: " + this.state.technique;
                 document.getElementById('qi-val').innerText = Math.floor(this.state.qi).toLocaleString();
                 document.getElementById('qi-bar').style.width = (this.state.qi / r.req * 100) + "%";
                 document.getElementById('age').innerText = Math.floor(this.state.age);
                 document.getElementById('maxAge').innerText = Math.floor(this.state.maxAge);
                 document.getElementById('karma').innerText = this.state.karma;
-                document.getElementById('root').innerText = this.state.rootMult + "x";
+                document.getElementById('root').innerText = this.state.rootMult.toFixed(1) + "x";
                 document.getElementById('rate-val').innerText = Math.floor(rate).toLocaleString();
-                document.getElementById('success-val').innerText = (r.chance * 100).toFixed(0) + "%";
+                document.getElementById('success-val').innerText = Math.min(100, (r.chance * successMod * 100)).toFixed(0) + "%";
                 document.documentElement.style.setProperty('--realm-color', r.color);
                 document.getElementById('break-btn').style.display = (this.state.qi >= r.req) ? 'block' : 'none';
                 document.getElementById('cost-spirit').innerText = Math.floor(10 * Math.pow(1.8, this.state.upgrades.spirit)).toLocaleString();
@@ -283,9 +332,8 @@
                     list.innerHTML = "";
                     sn.forEach(d => {
                         const data = d.data();
-                        list.innerHTML += `<li class="p-2 bg-white/5 rounded border-l-2 border-purple-500">
-                            <div class="text-[11px] font-bold">${data.player}</div>
-                            <div class="text-[9px] text-yellow-500 uppercase">${data.realm}</div>
+                        list.innerHTML += `<li class="p-2 bg-white/5 rounded border-l-2 border-purple-500 text-xs">
+                            <b>${data.player}</b><br><span class="text-yellow-500">${data.realm}</span>
                         </li>`;
                     });
                 });
