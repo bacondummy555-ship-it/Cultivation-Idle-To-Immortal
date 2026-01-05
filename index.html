@@ -1,252 +1,519 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Path to Immortality</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<style>
-    :root {
-        --realm-color: #4c1d95;
-        --glow: rgba(139, 92, 246, 0.5);
-        --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Path to Immortality</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root { --realm-color: #4c1d95; --glow: rgba(139, 92, 246, 0.5); }
+        body { background-color: #050507; color: #e2e8f0; font-family: 'Georgia', serif; overflow-x: hidden; scroll-behavior: smooth; }
+        .qi-gradient { background: linear-gradient(90deg, var(--realm-color), #fff); box-shadow: 0 0 20px var(--realm-color); transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .mystic-border { border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 0 20px rgba(0,0,0,0.5); background: rgba(15, 15, 20, 0.8); backdrop-filter: blur(10px); transition: all 0.3s ease; }
+        .mystic-border:hover { border-color: var(--realm-color); }
+        
+        .auth-input { background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); padding: 0.75rem; border-radius: 0.5rem; width: 100%; outline: none; transition: 0.3s; color: white; }
+        .auth-input:focus { border-color: #a855f7; box-shadow: 0 0 10px rgba(168, 85, 247, 0.3); }
+        .btn-primary { background: #6d28d9; color: white; font-weight: bold; padding: 0.75rem; border-radius: 0.5rem; transition: 0.3s; width: 100%; }
+        .btn-primary:hover { background: #7c3aed; transform: translateY(-1px); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    body {
-        background-color: #050507;
-        color: #e2e8f0;
-        font-family: 'Georgia', serif;
-        overflow-x: hidden;
-        scroll-behavior: smooth;
-    }
+        @keyframes pulse-slow { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+        .animate-pulse-slow { animation: pulse-slow 3s infinite; }
 
-    .qi-gradient {
-        background: linear-gradient(90deg, var(--realm-color), #fff);
-        box-shadow: 0 0 20px var(--realm-color);
-        transition: width 0.3s var(--transition-smooth);
-    }
+        .map-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+        .tile { aspect-ratio: 1; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 8px; transition: all 0.2s; position: relative; overflow: hidden; border-radius: 4px; }
+        .tile-active { border: 1px solid #a855f7; box-shadow: inset 0 0 10px #a855f7; }
+        .fog { background: #0a0a0a !important; color: #1a1a1a !important; }
+        
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: var(--realm-color); border-radius: 10px; }
 
-    .mystic-border {
-        border: 1px solid rgba(255,255,255,0.1);
-        box-shadow: 0 0 20px rgba(0,0,0,0.5);
-        background: rgba(15,15,20,0.8);
-        backdrop-filter: blur(10px);
-        transition: all 0.3s ease;
-    }
-
-    .mystic-border:hover {
-        border-color: var(--realm-color);
-    }
-
-    .auth-input {
-        background: rgba(0,0,0,0.5);
-        border: 1px solid rgba(255,255,255,0.1);
-        padding: 0.75rem;
-        border-radius: 0.5rem;
-        width: 100%;
-        outline: none;
-        transition: 0.3s;
-        color: white;
-    }
-
-    .auth-input:focus {
-        border-color: #a855f7;
-        box-shadow: 0 0 10px rgba(168,85,247,0.3);
-    }
-
-    .btn-primary {
-        background: #6d28d9;
-        color: white;
-        font-weight: bold;
-        padding: 0.75rem;
-        border-radius: 0.5rem;
-        transition: all 0.3s;
-        width: 100%;
-    }
-
-    .btn-primary:hover:not(:disabled) {
-        background: #7c3aed;
-        transform: translateY(-1px);
-    }
-
-    .btn-primary:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    @keyframes pulse-slow {
-        0%,100% {opacity: 0.3;}
-        50% {opacity: 1;}
-    }
-
-    .animate-pulse-slow {
-        animation: pulse-slow 3s infinite;
-    }
-
-    .map-grid {
-        display: grid;
-        grid-template-columns: repeat(5,1fr);
-        gap: 4px;
-    }
-
-    .tile {
-        aspect-ratio: 1;
-        border: 1px solid rgba(255,255,255,0.05);
-        cursor: pointer;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        font-size: 8px;
-        transition: all 0.2s;
-        position: relative;
-        overflow: hidden;
-        border-radius: 4px;
-    }
-
-    .tile-active {
-        border: 1px solid #a855f7;
-        box-shadow: inset 0 0 10px #a855f7;
-    }
-
-    .fog {
-        background: #0a0a0a !important;
-        color: #1a1a1a !important;
-    }
-
-    .tile-occupied {
-        background: linear-gradient(135deg, rgba(168,85,247,0.1), rgba(139,92,246,0.05));
-    }
-
-    ::-webkit-scrollbar {
-        width: 4px;
-    }
-
-    ::-webkit-scrollbar-thumb {
-        background: var(--realm-color);
-        border-radius: 10px;
-    }
-
-    .no-select {
-        user-select: none;
-        -webkit-user-select: none;
-    }
-
-    @keyframes shimmer {
-        0% {background-position: -200% center;}
-        100% {background-position: 200% center;}
-    }
-
-    .shimmer {
-        background: linear-gradient(
-            90deg,
-            transparent 0%,
-            rgba(255,255,255,0.1) 50%,
-            transparent 100%
-        );
-        background-size: 200% auto;
-        animation: shimmer 2s infinite;
-    }
-
-    .will-change-transform {will-change: transform;}
-    .will-change-opacity {will-change: opacity;}
-</style>
+        /* Draggable Admin Styles */
+        #admin-panel { cursor: default; user-select: none; }
+        #admin-header { cursor: grab; }
+        #admin-header:active { cursor: grabbing; }
+    </style>
 </head>
-<body class="p-4 transition-colors duration-1000 no-select">
+<body class="p-4 transition-colors duration-1000">
 
-<!-- Loading Screen -->
-<div id="loading-screen" class="fixed inset-0 bg-black z-[100] flex flex-col items-center justify-center">
-    <div class="text-4xl font-black tracking-[0.3em] text-white mb-8 animate-pulse-slow">PATH TO IMMORTALITY</div>
-    <div class="w-64 h-1 bg-gray-900 rounded-full overflow-hidden">
-        <div id="loading-bar" class="h-full bg-purple-600 w-0 transition-all duration-500"></div>
+    <div id="loading-screen" class="fixed inset-0 bg-black z-[100] flex flex-col items-center justify-center">
+        <div class="text-4xl font-black tracking-[0.3em] text-white mb-8 animate-pulse-slow">PATH TO IMMORTALITY</div>
+        <div class="w-64 h-1 bg-gray-900 rounded-full overflow-hidden">
+            <div id="loading-bar" class="h-full bg-purple-600 w-0 transition-all duration-500"></div>
+        </div>
+        <p class="mt-4 text-xs text-purple-500 font-mono tracking-widest uppercase">Touching the Heavens...</p>
     </div>
-    <p class="mt-4 text-xs text-purple-500 font-mono tracking-widest uppercase">Touching the Heavens...</p>
-</div>
 
-<!-- Authentication Container -->
-<div id="auth-container" class="fixed inset-0 bg-black/90 z-[90] hidden items-center justify-center p-6">
-    <div class="mystic-border p-8 rounded-3xl w-full max-w-md">
-        <div id="login-form">
-            <h2 class="text-2xl font-bold mb-6 text-center text-purple-400 font-serif">Divine Login</h2>
-            <div class="space-y-4">
-                <input type="email" placeholder="Email" class="auth-input" id="login-email" autocomplete="email">
-                <input type="password" placeholder="Password" class="auth-input" id="login-pass" autocomplete="current-password">
-                <button id="login-btn" class="btn-primary">ENTER THE DAO</button>
-                <div class="flex justify-between text-xs text-gray-500 px-1">
-                    <button data-action="register" class="hover:text-purple-400 transition-colors">Create Account</button>
-                    <button data-action="forgot" class="hover:text-purple-400 transition-colors">Forgot</button>
+    <div id="auth-container" class="fixed inset-0 bg-black/90 z-[90] hidden flex items-center justify-center p-6">
+        <div class="mystic-border p-8 rounded-3xl w-full max-w-md">
+            <div id="login-form">
+                <h2 class="text-2xl font-bold mb-6 text-center text-purple-400 font-serif">Divine Login</h2>
+                <div class="space-y-4">
+                    <input type="email" placeholder="Email" class="auth-input" id="login-email">
+                    <input type="password" placeholder="Password" class="auth-input" id="login-pass">
+                    <button id="login-btn" onclick="game.handleLogin()" class="btn-primary">ENTER THE DAO</button>
+                    <div class="flex justify-between text-xs text-gray-500 px-1">
+                        <button onclick="game.switchAuth('register')" class="hover:text-purple-400">Create Account</button>
+                        <button onclick="game.switchAuth('forgot')" class="hover:text-purple-400">Forgot</button>
+                    </div>
+                </div>
+            </div>
+            <div id="register-form" class="hidden">
+                <h2 class="text-2xl font-bold mb-6 text-center text-green-400 font-serif">New Incarnation</h2>
+                <div class="space-y-4">
+                    <input type="text" placeholder="Daoist Name" class="auth-input" id="reg-name">
+                    <input type="email" placeholder="Email" class="auth-input" id="reg-email">
+                    <input type="password" placeholder="Password" class="auth-input" id="reg-pass">
+                    <button id="reg-btn" onclick="game.handleRegister()" class="btn-primary bg-green-700 hover:bg-green-600">REGISTER SOUL</button>
+                    <button onclick="game.switchAuth('login')" class="w-full text-xs text-gray-500 mt-2 hover:text-purple-400">Return to Void</button>
+                </div>
+            </div>
+            <div id="forgot-form" class="hidden">
+                <h2 class="text-2xl font-bold mb-6 text-center text-yellow-500 font-serif">Restore Tether</h2>
+                <div class="space-y-4">
+                    <p class="text-xs text-gray-400 mb-4">A spiritual link will be sent to your email.</p>
+                    <input type="email" placeholder="Email" class="auth-input" id="forgot-email">
+                    <button id="forgot-btn" onclick="game.handleForgot()" class="btn-primary bg-yellow-700 hover:bg-yellow-600">SEND LINK</button>
+                    <button onclick="game.switchAuth('login')" class="w-full text-xs text-gray-500 mt-2 hover:text-purple-400">Back</button>
                 </div>
             </div>
         </div>
-        <div id="register-form" class="hidden">
-            <h2 class="text-2xl font-bold mb-6 text-center text-green-400 font-serif">New Incarnation</h2>
-            <div class="space-y-4">
-                <input type="text" placeholder="Daoist Name" class="auth-input" id="reg-name" autocomplete="name">
-                <input type="email" placeholder="Email" class="auth-input" id="reg-email" autocomplete="email">
-                <input type="password" placeholder="Password" class="auth-input" id="reg-pass" autocomplete="new-password">
-                <button id="reg-btn" class="btn-primary bg-green-700 hover:bg-green-600">REGISTER SOUL</button>
-                <button data-action="login" class="w-full text-xs text-gray-500 mt-2 hover:text-purple-400 transition-colors">Return to Void</button>
+    </div>
+
+    <div id="game-ui" class="opacity-0 transition-opacity duration-1000">
+        
+        <div id="technique-screen" class="fixed inset-0 bg-black/95 z-[60] hidden flex-col items-center justify-center p-6 text-center backdrop-blur-md">
+            <h2 class="text-4xl font-bold text-purple-500 mb-2 tracking-tighter">Choose Your Technique</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl">
+                <div class="mystic-border p-6 rounded-2xl hover:border-blue-500 transition cursor-pointer" onclick="game.setTechnique('turtle')">
+                    <h3 class="text-blue-400 font-bold text-xl mb-2">Steady Turtle</h3>
+                    <div class="text-green-400 text-sm font-bold">+50% Success Rate</div>
+                </div>
+                <div class="mystic-border p-6 rounded-2xl hover:border-yellow-500 transition cursor-pointer" onclick="game.setTechnique('dao')">
+                    <h3 class="text-yellow-500 font-bold text-xl mb-2">Balanced Dao</h3>
+                    <div class="text-blue-400 text-sm">Pure Path</div>
+                </div>
+                <div class="mystic-border p-6 rounded-2xl hover:border-red-600 transition cursor-pointer" onclick="game.setTechnique('phoenix')">
+                    <h3 class="text-red-500 font-bold text-xl mb-2">Raging Phoenix</h3>
+                    <div class="text-green-400 text-sm font-bold">+100% Qi Speed</div>
+                </div>
             </div>
         </div>
-        <div id="forgot-form" class="hidden">
-            <h2 class="text-2xl font-bold mb-6 text-center text-yellow-500 font-serif">Restore Tether</h2>
-            <div class="space-y-4">
-                <p class="text-xs text-gray-400 mb-4">A spiritual link will be sent to your email.</p>
-                <input type="email" placeholder="Email" class="auth-input" id="forgot-email" autocomplete="email">
-                <button id="forgot-btn" class="btn-primary bg-yellow-700 hover:bg-yellow-600">SEND LINK</button>
-                <button data-action="login" class="w-full text-xs text-gray-500 mt-2 hover:text-purple-400 transition-colors">Back</button>
+
+        <div id="reincarnation-screen" class="fixed inset-0 bg-black z-50 hidden flex-col items-center justify-center p-6 text-center">
+            <h2 class="text-6xl font-bold text-yellow-500 mb-4">Life Exhausted</h2>
+            <p id="death-msg" class="text-xl text-gray-400 mb-8"></p>
+            <div class="text-2xl mb-8">Karma Earned: <span id="karma-gain" class="text-green-400 font-bold">0</span></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
+                <button onclick="game.reincarnate(1, 0)" class="p-4 border border-gray-700 hover:border-purple-500 rounded-xl">Mortal Root (1x)</button>
+                <button onclick="game.reincarnate(10, 1000)" class="p-4 border border-gray-700 hover:border-purple-500 rounded-xl">Heavenly Root (10x)</button>
+            </div>
+        </div>
+
+        <div class="max-w-7xl mx-auto">
+            <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+                <div>
+                    <h1 class="text-4xl font-black uppercase tracking-widest text-white">Daoist <span id="p-name" class="text-purple-500">...</span></h1>
+                    <p id="p-realm" class="text-yellow-500 font-bold text-xl uppercase tracking-wider">Mortal</p>
+                    <button onclick="game.signOut()" class="text-[10px] text-red-500 hover:underline">Abandon Mortal Shell (Sign Out)</button>
+                </div>
+                <div class="flex gap-8 text-center bg-gray-900/50 p-4 rounded-2xl border border-white/5">
+                    <div><p class="text-[10px] text-gray-500 uppercase">Lifespan</p><p class="font-mono text-lg"><span id="age">18</span>/<span id="maxAge">100</span></p></div>
+                    <div><p class="text-[10px] text-gray-500 uppercase">Karma</p><p id="karma" class="font-mono text-lg text-green-400">0</p></div>
+                </div>
+            </header>
+
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <div class="space-y-6">
+                    <div class="mystic-border p-6 rounded-2xl">
+                        <h2 class="text-sm font-bold uppercase text-gray-500 mb-4 flex justify-between">Qi Reservoir <span id="success-val" class="text-green-500">100%</span></h2>
+                        <div class="text-4xl font-mono font-bold mb-2 tracking-tighter" id="qi-val">0</div>
+                        <div class="w-full bg-black/50 h-3 rounded-full overflow-hidden border border-white/5"><div id="qi-bar" class="qi-gradient h-full"></div></div>
+                        <div class="flex justify-between text-[10px] mt-2 text-gray-500 font-bold"><span>Rate: <b id="rate-val" class="text-gray-300">0</b>/s</span></div>
+                    </div>
+                    <div class="mystic-border p-4 rounded-2xl">
+                        <h2 class="text-[10px] font-bold uppercase text-purple-400 mb-2">World Map</h2>
+                        <div id="map-container" class="map-grid"></div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="mystic-border h-80 rounded-3xl flex flex-col items-center justify-center relative overflow-hidden bg-gradient-to-b from-transparent to-purple-950/20">
+                        <button onclick="game.manualMeditate()" class="w-40 h-40 rounded-full border-4 border-purple-500/30 flex items-center justify-center bg-black/40 hover:scale-105 transition-all shadow-[0_0_50px_var(--realm-color)] group">
+                            <span class="font-black text-xl group-hover:text-purple-400">MEDITATE</span>
+                        </button>
+                        <button id="break-btn" onclick="game.breakthrough()" class="hidden absolute bottom-6 w-3/4 bg-yellow-500 text-black font-black py-4 rounded-lg animate-pulse z-20">FACING TRIBULATION</button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="mystic-border p-4 rounded-2xl bg-black/20 h-64 overflow-hidden flex flex-col">
+                            <h3 class="text-[10px] font-bold text-gray-600 uppercase mb-2">Daoist Records</h3>
+                            <div id="log" class="flex-grow overflow-y-auto text-[11px] space-y-2 font-mono text-gray-400"></div>
+                        </div>
+                        <div class="mystic-border p-4 rounded-2xl flex flex-col h-64">
+                            <h2 class="text-[10px] font-bold uppercase text-gray-600 mb-2">World Transmission</h2>
+                            <div id="chat" class="flex-grow overflow-y-auto space-y-2 mb-2 text-xs"></div>
+                            <form id="chat-form" class="flex gap-2 pt-2 border-t border-white/5">
+                                <input id="chat-input" type="text" placeholder="Speak..." class="bg-black/50 border border-white/10 rounded-lg p-2 flex-grow text-xs">
+                                <button class="bg-purple-600 px-4 rounded-lg font-bold text-[10px]">SEND</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mystic-border p-6 rounded-2xl flex flex-col h-full max-h-[700px]">
+                    <h2 class="text-sm font-bold uppercase text-purple-400 mb-4 border-b border-purple-900/50 pb-2 text-center">Heavenly Rankings</h2>
+                    <ul id="leaderboard-list" class="space-y-3 overflow-y-auto pr-2"></ul>
+                </div>
+            </div>
+        </div>
+
+        <div id="admin-panel" class="hidden fixed bottom-4 left-4 z-[100] bg-red-950/90 border border-red-500 rounded-xl w-64 shadow-2xl">
+            <div id="admin-header" class="p-3 border-b border-red-800 bg-red-900/50 rounded-t-xl">
+                <h3 class="text-red-500 font-bold text-xs uppercase tracking-tighter">Heavenly Overseer Console</h3>
+            </div>
+            <div class="p-4 space-y-2">
+                <button onclick="game.adminResetMap()" class="w-full bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold py-2 rounded">WIPE WORLD MAP</button>
+                <button onclick="game.adminAddKarma()" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-2 rounded">GIVE SELF 10,000 KARMA</button>
+                <p class="text-[9px] text-red-300 mt-2">Active Administrator Detected</p>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Game UI -->
-<div id="game-ui" class="opacity-0 transition-opacity duration-1000 will-change-opacity">
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendPasswordResetEmail, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, doc, setDoc, query, orderBy, limit, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    <!-- Technique Selection -->
-    <div id="technique-screen" class="fixed inset-0 bg-black/95 z-[60] hidden flex-col items-center justify-center p-6 text-center backdrop-blur-md">
-        <h2 class="text-4xl font-bold text-purple-500 mb-8 tracking-tighter">Choose Your Technique</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl">
-            <div class="mystic-border p-6 rounded-2xl hover:border-blue-500 transition cursor-pointer" data-technique="turtle">
-                <h3 class="text-blue-400 font-bold text-xl mb-2">Steady Turtle</h3>
-                <div class="text-green-400 text-sm font-bold">+50% Success Rate</div>
-                <p class="text-xs text-gray-400 mt-2">Slow but reliable cultivation</p>
-            </div>
-            <div class="mystic-border p-6 rounded-2xl hover:border-yellow-500 transition cursor-pointer" data-technique="dao">
-                <h3 class="text-yellow-500 font-bold text-xl mb-2">Balanced Dao</h3>
-                <div class="text-blue-400 text-sm">Pure Path</div>
-                <p class="text-xs text-gray-400 mt-2">The middle way of cultivation</p>
-            </div>
-            <div class="mystic-border p-6 rounded-2xl hover:border-red-600 transition cursor-pointer" data-technique="phoenix">
-                <h3 class="text-red-500 font-bold text-xl mb-2">Raging Phoenix</h3>
-                <div class="text-green-400 text-sm font-bold">+100% Qi Speed</div>
-                <p class="text-xs text-gray-400 mt-2">Fast but risky advancement</p>
-            </div>
-        </div>
-    </div>
+        const firebaseConfig = {
+            apiKey: "AIzaSyD7N-ZUGKm9hasgM0DD08scouydEEuiLvU",
+            authDomain: "path-to-immortality-78ad8.firebaseapp.com",
+            projectId: "path-to-immortality-78ad8",
+            storageBucket: "path-to-immortality-78ad8.firebasestorage.app",
+            messagingSenderId: "653760996266",
+            appId: "1:653760996266:web:59c8dc7158cba0722e01d3"
+        };
 
-    <!-- Reincarnation Screen -->
-    <div id="reincarnation-screen" class="fixed inset-0 bg-black z-50 hidden flex-col items-center justify-center p-6 text-center">
-        <h2 class="text-6xl font-bold text-yellow-500 mb-4">Life Exhausted</h2>
-        <p id="death-msg" class="text-xl text-gray-400 mb-8"></p>
-        <div class="text-2xl mb-8">Karma Earned: <span id="karma-gain" class="text-green-400 font-bold">0</span></div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
-            <button class="p-4 border border-gray-700 hover:border-purple-500 rounded-xl transition-colors" data-reincarnate="1" data-cost="0">Mortal Root (1x)</button>
-            <button class="p-4 border border-gray-700 hover:border-purple-500 rounded-xl transition-colors" data-reincarnate="10" data-cost="1000">Heavenly Root (10x)</button>
-        </div>
-    </div>
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const SAVE_KEY_PREFIX = "ImmortalV7_User_";
 
-    <!-- Main Interface and Panels here ... -->
+        const game = {
+            currentUser: null,
+            state: {
+                name: "", qi: 0, realmIdx: 0, age: 18, maxAge: 100,
+                upgrades: { spirit: 0, tech: 0 },
+                karma: 0, rootMult: 1, lastTick: Date.now(),
+                technique: "dao", pos: -1, techniqueChosen: false,
+                isDead: false, moveCooldown: 0
+            },
+            mapData: Array(25).fill(null).map((_, i) => ({ id: i, lord: null, level: 0, density: 1 + (i % 5 * 0.5), lordQi: 0 })),
+            realms: [
+                "Mortal Body", "Refined Body", "Tempered Flesh", "Bone Forging", "Blood Circulation", "Muscle Cleansing", "Meridian Awakening", "Qi Sense", "Qi Initiation", "Qi Condensation", "Qi Gathering", "Qi Foundation", "Qi Stabilization",
+                "Foundation Establishment", "Foundation Perfection", "Spirit Root Awakening", "Spirit Root Tempering", "Spirit Root Harmonization", "Golden Core (Early)", "Golden Core (Middle)", "Golden Core (Late)", "Golden Core (Perfected)",
+                "False Nascent Soul", "Nascent Soul (Early)", "Nascent Soul (Middle)", "Nascent Soul (Late)", "Nascent Soul (Perfected)", "Soul Infant", "Soul Transformation", "Soul Ascension", "Soul Integration",
+                "Spirit Severing", "Spirit Fusion", "Void Perception", "Void Refinement", "Dao Seed Formation", "Dao Comprehension", "Dao Integration", "Dao Manifestation", "Dao King",
+                "Earth Immortal", "Sky Immortal", "True Immortal", "Golden Immortal", "Heavenly Immortal", "Immortal Lord", "Immortal King", "Immortal Emperor",
+                "Pseudo-God", "Minor Deity", "True Deity", "High Deity", "Divine Lord", "Divine King", "Divine Emperor",
+                "Primordial Body", "Primordial Soul", "Primordial Dao", "Origin Being", "Origin Sovereign", "Origin Emperor",
+                "Void Ancestor", "Chaos Walker", "Chaos Sovereign", "Chaos Emperor", "Existence Transcendent", "Law Devourer", "Reality Shaper", "World Creator", "Multiverse Sovereign", "Omni-Existence", "Beyond Heaven", "Boundless One", "Absolute Apex"
+            ].map((n, i) => ({
+                name: n, req: Math.floor(100 * Math.pow(1.68, i)), color: `hsl(${250 + (i * 3)}, 70%, 50%)`, chance: Math.max(0.05, 1 - (i * 0.015))
+            })),
 
-</div>
+            init() {
+                let prog = 0;
+                const interval = setInterval(() => {
+                    prog += 10;
+                    document.getElementById('loading-bar').style.width = prog + "%";
+                    if (prog >= 100) {
+                        clearInterval(interval);
+                        this.checkSession();
+                        this.makeDraggable(document.getElementById("admin-panel"), document.getElementById("admin-header"));
+                    }
+                }, 100);
+            },
 
-<script type="module">
-// --- FULL GAME LOGIC IMPROVED ---
-// Your JS logic goes here with all fixes and optimizations from previous steps
-// Including: map rendering, Qi bar updates, chat auto-scroll, logs limited to 100 entries
-// Admin drag improvements, technique selection, breakthrough with shimmer, manual meditation
-// Reincarnation fixes and safe Firestore operations
-</script>
+            // New logic to make panels draggable
+            makeDraggable(el, handle) {
+                let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+                handle.onmousedown = dragMouseDown;
+                handle.ontouchstart = dragMouseDown;
 
+                function dragMouseDown(e) {
+                    e = e || window.event;
+                    if (e.type !== 'touchstart') e.preventDefault();
+                    pos3 = e.clientX || e.touches[0].clientX;
+                    pos4 = e.clientY || e.touches[0].clientY;
+                    document.onmouseup = closeDragElement;
+                    document.ontouchend = closeDragElement;
+                    document.onmousemove = elementDrag;
+                    document.ontouchmove = elementDrag;
+                }
+
+                function elementDrag(e) {
+                    e = e || window.event;
+                    let clientX = e.clientX || e.touches[0].clientX;
+                    let clientY = e.clientY || e.touches[0].clientY;
+                    pos1 = pos3 - clientX;
+                    pos2 = pos4 - clientY;
+                    pos3 = clientX;
+                    pos4 = clientY;
+                    el.style.top = (el.offsetTop - pos2) + "px";
+                    el.style.left = (el.offsetLeft - pos1) + "px";
+                    el.style.bottom = "auto"; // Disable fixed bottom positioning
+                }
+
+                function closeDragElement() {
+                    document.onmouseup = null;
+                    document.onmousemove = null;
+                    document.ontouchend = null;
+                    document.ontouchmove = null;
+                }
+            },
+
+            checkSession() {
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        this.currentUser = user;
+                        this.state.name = user.displayName || "Creator Of All Things";
+                        this.checkAdminStatus(user);
+                        this.startGame();
+                    } else {
+                        document.getElementById('loading-screen').style.display = 'none';
+                        document.getElementById('auth-container').style.display = 'flex';
+                    }
+                });
+            },
+
+            checkAdminStatus(user) {
+                const ADMIN_UID = "AGR9whqSLbQPefvXPUC4AMX5Fld2"; 
+                if (user.uid === ADMIN_UID) {
+                    const panel = document.getElementById('admin-panel');
+                    if (panel) panel.classList.remove('hidden');
+                }
+            },
+
+            async handleLogin() {
+                const email = document.getElementById('login-email').value;
+                const pass = document.getElementById('login-pass').value;
+                const btn = document.getElementById('login-btn');
+                try {
+                    btn.disabled = true; btn.innerText = "OPENING GATES...";
+                    await signInWithEmailAndPassword(auth, email, pass);
+                } catch (e) { alert(e.message); btn.disabled = false; btn.innerText = "ENTER THE DAO"; }
+            },
+
+            async handleRegister() {
+                const name = document.getElementById('reg-name').value;
+                const email = document.getElementById('reg-email').value;
+                const pass = document.getElementById('reg-pass').value;
+                if (!name) return alert("Heaven requires a name.");
+                try {
+                    const res = await createUserWithEmailAndPassword(auth, email, pass);
+                    await updateProfile(res.user, { displayName: name });
+                    location.reload();
+                } catch (e) { alert(e.message); }
+            },
+
+            async handleForgot() {
+                const email = document.getElementById('forgot-email').value;
+                try {
+                    await sendPasswordResetEmail(auth, email);
+                    alert("Divine link sent to email.");
+                } catch (e) { alert(e.message); }
+            },
+
+            signOut() { signOut(auth).then(() => location.reload()); },
+
+            switchAuth(view) {
+                ['login', 'register', 'forgot'].forEach(v => document.getElementById(`${v}-form`).classList.add('hidden'));
+                document.getElementById(`${view}-form`).classList.remove('hidden');
+            },
+
+            startGame() {
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('auth-container').style.display = 'none';
+                document.getElementById('game-ui').style.opacity = '1';
+                const saved = localStorage.getItem(SAVE_KEY_PREFIX + this.currentUser.uid);
+                if (saved) this.state = {...this.state, ...JSON.parse(saved)};
+                if (this.state.pos === -1) this.state.pos = Math.floor(Math.random() * 25);
+                this.setupNetwork();
+                this.listenToLeaderboard();
+                this.listenToMap();
+                if (!this.state.techniqueChosen) document.getElementById('technique-screen').style.display = 'flex';
+                setInterval(() => this.tick(), 100);
+                setInterval(() => this.save(), 5000);
+                this.render();
+            },
+
+            save() { localStorage.setItem(SAVE_KEY_PREFIX + this.currentUser.uid, JSON.stringify(this.state)); },
+
+            setTechnique(type) {
+                this.state.technique = type;
+                this.state.techniqueChosen = true;
+                document.getElementById('technique-screen').style.display = 'none';
+                this.save();
+            },
+
+            tick() {
+                if (this.state.isDead) return;
+                const now = Date.now();
+                const dt = (now - this.state.lastTick) / 1000;
+                this.state.lastTick = now;
+                if (this.state.moveCooldown > 0) this.state.moveCooldown -= dt;
+                let techRate = this.state.technique === 'turtle' ? 0.7 : (this.state.technique === 'phoenix' ? 2.0 : 1.0);
+                const currentTile = this.mapData[this.state.pos];
+                const mapBonus = (currentTile && currentTile.lord === this.state.name) ? currentTile.density : 1.0;
+                const rate = (1 + this.state.upgrades.spirit) * Math.pow(1.5, this.state.realmIdx) * this.state.rootMult * techRate * mapBonus;
+                this.state.qi = Math.min(this.realms[this.state.realmIdx].req, this.state.qi + (rate * dt));
+                this.state.age += dt / 60;
+                if (this.state.age >= this.state.maxAge) this.die();
+                this.render(rate);
+            },
+
+            manualMeditate() {
+                let techRate = this.state.technique === 'turtle' ? 0.7 : (this.state.technique === 'phoenix' ? 2.0 : 1.0);
+                const currentTile = this.mapData[this.state.pos];
+                const mapBonus = (currentTile && currentTile.lord === this.state.name) ? currentTile.density : 1.0;
+                const power = (10 + (this.state.realmIdx * 50)) * this.state.rootMult * techRate * mapBonus;
+                this.state.qi = Math.min(this.realms[this.state.realmIdx].req, this.state.qi + power);
+                this.render();
+            },
+
+            async breakthrough() {
+                const r = this.realms[this.state.realmIdx];
+                let successMod = this.state.technique === 'turtle' ? 1.5 : (this.state.technique === 'phoenix' ? 0.8 : 1.0);
+                if (Math.random() <= (r.chance * successMod)) {
+                    this.state.realmIdx++; this.state.qi = 0; this.state.maxAge += 50;
+                    this.addLog(`<span class="text-green-400">Advanced to ${this.realms[this.state.realmIdx].name}!</span>`);
+                    await setDoc(doc(db, "highscores", this.currentUser.uid), { player: this.state.name, realm: this.realms[this.state.realmIdx].name, level: this.state.realmIdx, updatedAt: serverTimestamp() });
+                } else {
+                    this.state.qi *= 0.5;
+                    this.addLog(`<span class="text-red-500">Breakthrough Failed!</span>`);
+                }
+                this.save();
+            },
+
+            async occupyTile(id) {
+                if (this.state.moveCooldown > 0) return;
+                const target = this.mapData[id];
+                const myRow = Math.floor(this.state.pos / 5); const myCol = this.state.pos % 5;
+                const tRow = Math.floor(id / 5); const tCol = id % 5;
+                if (Math.abs(myRow - tRow) > 1 || Math.abs(myCol - tCol) > 1) return;
+                if (target.lord === this.state.name) return;
+                if (target.lord) {
+                    let win = this.state.realmIdx > target.level || (this.state.realmIdx === target.level && this.state.qi > (target.lordQi || 0));
+                    if (!win) { this.state.qi *= 0.7; this.state.moveCooldown = 5; return; }
+                }
+                await setDoc(doc(db, "map", `tile_${id}`), { lord: this.state.name, level: this.state.realmIdx, lordQi: this.state.qi, density: target.density, at: serverTimestamp() });
+                this.state.pos = id;
+                this.save();
+            },
+
+            listenToMap() {
+                onSnapshot(query(collection(db, "map")), (sn) => {
+                    sn.forEach(d => {
+                        const id = parseInt(d.id.split('_')[1]);
+                        this.mapData[id] = { ...this.mapData[id], ...d.data() };
+                    });
+                    this.renderMap();
+                });
+            },
+
+            renderMap() {
+                const container = document.getElementById('map-container');
+                if(!container) return; container.innerHTML = "";
+                const myRow = Math.floor(this.state.pos / 5); const myCol = this.state.pos % 5;
+                this.mapData.forEach(tile => {
+                    const tRow = Math.floor(tile.id / 5); const tCol = tile.id % 5;
+                    const isVisible = Math.abs(myRow - tRow) <= 1 && Math.abs(myCol - tCol) <= 1;
+                    const div = document.createElement('div');
+                    div.className = `tile ${tile.id === this.state.pos ? 'tile-active' : ''} ${!isVisible ? 'fog' : (tile.lord ? 'bg-purple-900/30' : 'bg-black/40')}`;
+                    if (isVisible) {
+                        div.innerHTML = `<span class="text-gray-500 font-mono">${tile.density.toFixed(1)}x</span><span class="truncate w-full text-center font-bold" style="color:${tile.lord ? '#a855f7' : '#444'}">${tile.lord || 'Empty'}</span>`;
+                        div.onclick = () => this.occupyTile(tile.id);
+                    } else { div.innerHTML = `???`; }
+                    container.appendChild(div);
+                });
+            },
+
+            async adminResetMap() {
+                if(!confirm("Wipe all lords?")) return;
+                const promises = this.mapData.map((tile, i) => {
+                    return setDoc(doc(db, "map", `tile_${i}`), { lord: null, level: 0, lordQi: 0, density: 1 + (i % 5 * 0.5), at: serverTimestamp() });
+                });
+                await Promise.all(promises);
+                alert("Map Reset.");
+            },
+
+            adminAddKarma() {
+                this.state.karma += 10000; this.save(); this.render();
+            },
+
+            die() {
+                this.state.isDead = true; this.state.karma += this.state.realmIdx * 20;
+                document.getElementById('karma-gain').innerText = this.state.realmIdx * 20;
+                document.getElementById('reincarnation-screen').style.display = 'flex';
+            },
+
+            reincarnate(mult, cost) {
+                if (this.state.karma < cost) return alert("Low Karma");
+                this.state.karma -= cost; this.state.rootMult = mult; this.state.age = 18; this.state.maxAge = 100; this.state.realmIdx = 0; this.state.qi = 0; this.state.techniqueChosen = false; this.state.isDead = false;
+                document.getElementById('reincarnation-screen').style.display = 'none';
+                document.getElementById('technique-screen').style.display = 'flex';
+                this.save();
+            },
+
+            render(rate = 0) {
+                const r = this.realms[this.state.realmIdx];
+                if(!r) return;
+                document.getElementById('p-name').innerText = this.state.name;
+                document.getElementById('p-realm').innerText = r.name;
+                document.getElementById('qi-val').innerText = Math.floor(this.state.qi).toLocaleString();
+                document.getElementById('qi-bar').style.width = (Math.min(100, (this.state.qi / r.req * 100))) + "%";
+                document.getElementById('age').innerText = Math.floor(this.state.age);
+                document.getElementById('karma').innerText = Math.floor(this.state.karma);
+                document.getElementById('rate-val').innerText = Math.floor(rate).toLocaleString();
+                document.documentElement.style.setProperty('--realm-color', r.color);
+                document.getElementById('break-btn').style.display = (this.state.qi >= r.req) ? 'block' : 'none';
+            },
+
+            addLog(msg) {
+                const log = document.getElementById('log');
+                const div = document.createElement('div');
+                div.className = "border-l-2 border-purple-500 pl-2 mb-1"; div.innerHTML = msg;
+                log.prepend(div);
+            },
+
+            listenToLeaderboard() {
+                onSnapshot(query(collection(db, "highscores"), orderBy("level", "desc"), limit(10)), (sn) => {
+                    const list = document.getElementById('leaderboard-list'); list.innerHTML = "";
+                    sn.forEach(d => {
+                        const data = d.data();
+                        list.innerHTML += `<li class="p-3 bg-white/5 rounded-xl border-l-4 border-purple-500 text-xs"><b>${data.player}</b><br><span class="text-yellow-500">${data.realm}</span></li>`;
+                    });
+                });
+            },
+
+            setupNetwork() {
+                onSnapshot(query(collection(db, "messages"), orderBy("createdAt", "desc"), limit(15)), (sn) => {
+                    const chat = document.getElementById('chat'); chat.innerHTML = "";
+                    sn.forEach(d => { chat.innerHTML += `<div class="bg-white/5 p-2 rounded-lg"><b class="text-purple-400">${d.data().user}</b>: ${d.data().text}</div>`; });
+                });
+                document.getElementById('chat-form').onsubmit = async (e) => {
+                    e.preventDefault();
+                    const input = document.getElementById('chat-input');
+                    if (!input.value.trim()) return;
+                    await addDoc(collection(db, "messages"), { user: this.state.name, text: input.value, createdAt: serverTimestamp() });
+                    input.value = "";
+                };
+            }
+        };
+
+        window.game = game;
+        game.init();
+    </script>
 </body>
 </html>
