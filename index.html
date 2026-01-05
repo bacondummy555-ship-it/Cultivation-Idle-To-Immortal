@@ -28,6 +28,11 @@
         
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: var(--realm-color); border-radius: 10px; }
+
+        /* Draggable Admin Styles */
+        #admin-panel { cursor: default; user-select: none; }
+        #admin-header { cursor: grab; }
+        #admin-header:active { cursor: grabbing; }
     </style>
 </head>
 <body class="p-4 transition-colors duration-1000">
@@ -163,9 +168,11 @@
             </div>
         </div>
 
-        <div id="admin-panel" class="hidden fixed bottom-4 left-4 z-[100] bg-red-950/90 border border-red-500 p-4 rounded-xl max-w-xs shadow-2xl">
-            <h3 class="text-red-500 font-bold mb-2 text-xs uppercase tracking-tighter">Heavenly Overseer Console</h3>
-            <div class="space-y-2">
+        <div id="admin-panel" class="hidden fixed bottom-4 left-4 z-[100] bg-red-950/90 border border-red-500 rounded-xl w-64 shadow-2xl">
+            <div id="admin-header" class="p-3 border-b border-red-800 bg-red-900/50 rounded-t-xl">
+                <h3 class="text-red-500 font-bold text-xs uppercase tracking-tighter">Heavenly Overseer Console</h3>
+            </div>
+            <div class="p-4 space-y-2">
                 <button onclick="game.adminResetMap()" class="w-full bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold py-2 rounded">WIPE WORLD MAP</button>
                 <button onclick="game.adminAddKarma()" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-2 rounded">GIVE SELF 10,000 KARMA</button>
                 <p class="text-[9px] text-red-300 mt-2">Active Administrator Detected</p>
@@ -223,8 +230,47 @@
                     if (prog >= 100) {
                         clearInterval(interval);
                         this.checkSession();
+                        this.makeDraggable(document.getElementById("admin-panel"), document.getElementById("admin-header"));
                     }
                 }, 100);
+            },
+
+            // New logic to make panels draggable
+            makeDraggable(el, handle) {
+                let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+                handle.onmousedown = dragMouseDown;
+                handle.ontouchstart = dragMouseDown;
+
+                function dragMouseDown(e) {
+                    e = e || window.event;
+                    if (e.type !== 'touchstart') e.preventDefault();
+                    pos3 = e.clientX || e.touches[0].clientX;
+                    pos4 = e.clientY || e.touches[0].clientY;
+                    document.onmouseup = closeDragElement;
+                    document.ontouchend = closeDragElement;
+                    document.onmousemove = elementDrag;
+                    document.ontouchmove = elementDrag;
+                }
+
+                function elementDrag(e) {
+                    e = e || window.event;
+                    let clientX = e.clientX || e.touches[0].clientX;
+                    let clientY = e.clientY || e.touches[0].clientY;
+                    pos1 = pos3 - clientX;
+                    pos2 = pos4 - clientY;
+                    pos3 = clientX;
+                    pos4 = clientY;
+                    el.style.top = (el.offsetTop - pos2) + "px";
+                    el.style.left = (el.offsetLeft - pos1) + "px";
+                    el.style.bottom = "auto"; // Disable fixed bottom positioning
+                }
+
+                function closeDragElement() {
+                    document.onmouseup = null;
+                    document.onmousemove = null;
+                    document.ontouchend = null;
+                    document.ontouchmove = null;
+                }
             },
 
             checkSession() {
@@ -242,7 +288,7 @@
             },
 
             checkAdminStatus(user) {
-                const ADMIN_UID = "AGR9whqSLbQPefvXPUC4AMX5Fld2"; // <--- PUT YOUR UID HERE
+                const ADMIN_UID = "AGR9whqSLbQPefvXPUC4AMX5Fld2"; 
                 if (user.uid === ADMIN_UID) {
                     const panel = document.getElementById('admin-panel');
                     if (panel) panel.classList.remove('hidden');
