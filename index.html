@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Path to Immortality | Cultivation Idle</title>
+    <title>Path to Immortality | 93 Realms of Power</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --realm-color: #4c1d95; }
@@ -14,7 +14,6 @@
         @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
         .meditate-anim { animation: float 3s ease-in-out infinite; }
         #chat-messages { height: 200px; overflow-y: auto; display: flex; flex-direction: column-reverse; scroll-behavior: smooth; }
-        .announcement { color: #facc15; font-weight: bold; border-left: 3px solid #facc15; padding: 4px 8px; margin: 4px 0; background: rgba(250, 204, 21, 0.1); font-style: italic; font-size: 0.8rem; }
         .stat-val { font-family: 'Courier New', monospace; font-weight: bold; color: #a78bfa; }
         .btn-upgrade:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
     </style>
@@ -27,7 +26,6 @@
                 <span>Daoist: <b id="player-name-display" class="text-purple-300">...</b></span>
                 <span>Realm: <b id="realm" class="text-yellow-500 text-lg">Mortal</b></span>
                 <span>Lifespan: <span id="age" class="stat-val">18</span> / <span id="maxAge" class="stat-val">100</span> Years</span>
-                <span>Karma: <b id="karma-display" class="text-green-400">0</b></span>
             </div>
         </header>
 
@@ -39,11 +37,10 @@
                     <div class="w-full bg-gray-800 rounded-full h-5 overflow-hidden border border-white/5">
                         <div id="qi-bar" class="qi-gradient h-full progress-bar" style="width: 0%"></div>
                     </div>
-                    <p class="text-xs text-gray-500 mt-2">Breakthrough Requirement: <span id="qi-needed" class="text-gray-300">100</span></p>
+                    <p class="text-xs text-gray-500 mt-2">Breakthrough Req: <span id="qi-needed" class="text-gray-300">100</span></p>
                 </div>
                 <div class="space-y-3 text-sm border-t border-purple-900/30 pt-4">
                     <div class="flex justify-between"><span>Absorption Rate:</span> <span id="rate" class="text-green-400 stat-val">1.0</span>/s</div>
-                    <div class="flex justify-between"><span>Spirit Root:</span> <span id="root-grade" class="text-cyan-400 font-bold uppercase">Grade D</span></div>
                     <div class="flex justify-between"><span>Technique:</span> <span id="tech-level" class="text-orange-400">Lv 0</span></div>
                 </div>
             </div>
@@ -54,31 +51,28 @@
                     <div class="meditate-anim relative z-10">
                         <button onclick="window.game.manualMeditate()" class="group relative bg-purple-700 hover:bg-purple-600 px-12 py-6 rounded-full font-black text-xl transition-all active:scale-95 shadow-[0_0_30px_rgba(139,92,246,0.5)] border-2 border-purple-400/30">
                             GATHER QI
-                            <span class="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-yellow-500 text-black text-[9px] px-2 py-0.5 rounded font-bold whitespace-nowrap">MANUAL ABSORPTION</span>
                         </button>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <button id="btn-upg-spirit" onclick="window.game.buyUpgrade('spirit')" class="btn-upgrade mystic-border p-4 rounded-xl bg-gray-800 hover:bg-gray-700 transition group">
-                        <div class="font-bold text-purple-300 group-hover:text-white">Gathering Array</div>
-                        <div class="text-xs text-gray-400 mb-1">Increase base Qi production</div>
+                    <button id="btn-upg-spirit" onclick="window.game.buyUpgrade('spirit')" class="btn-upgrade mystic-border p-4 rounded-xl bg-gray-800 hover:bg-gray-700 transition">
+                        <div class="font-bold text-purple-300">Gathering Array</div>
                         <div class="text-sm font-mono text-yellow-500">Cost: <span id="upg-spirit-cost">10</span></div>
                     </button>
-                    <button id="btn-upg-tech" onclick="window.game.buyUpgrade('tech')" class="btn-upgrade mystic-border p-4 rounded-xl bg-gray-800 hover:bg-gray-700 transition group">
-                        <div class="font-bold text-orange-400 group-hover:text-white">Mental Method</div>
-                        <div class="text-xs text-gray-400 mb-1">Large Qi Multiplier</div>
+                    <button id="btn-upg-tech" onclick="window.game.buyUpgrade('tech')" class="btn-upgrade mystic-border p-4 rounded-xl bg-gray-800 hover:bg-gray-700 transition">
+                        <div class="font-bold text-orange-400">Mental Method</div>
                         <div class="text-sm font-mono text-yellow-500">Cost: <span id="upg-tech-cost">50</span></div>
                     </button>
-                    <button onclick="window.game.breakthrough()" id="btn-breakthrough" class="sm:col-span-2 hidden bg-gradient-to-r from-yellow-600 to-yellow-400 p-4 rounded-xl font-black text-black hover:brightness-110 transition shadow-[0_0_25px_rgba(234,179,8,0.5)]">
-                        ATTEMPT BREAKTHROUGH
+                    <button onclick="window.game.breakthrough()" id="btn-breakthrough" class="sm:col-span-2 hidden bg-gradient-to-r from-yellow-600 to-yellow-400 p-4 rounded-xl font-black text-black hover:brightness-110 transition shadow-[0_0_25px_rgba(234,179,8,0.5)] uppercase">
+                        Attempt Breakthrough
                     </button>
                 </div>
 
                 <div class="mystic-border bg-gray-900/50 rounded-2xl overflow-hidden flex flex-col">
-                    <div id="chat-messages" class="p-4 space-y-2 text-sm"></div>
+                    <div id="chat-messages" class="p-4 space-y-2 text-sm h-40 overflow-y-auto"></div>
                     <form id="chat-form" class="flex border-t border-purple-900/50">
-                        <input type="text" id="chat-input" placeholder="Speak to the world..." class="flex-grow bg-black/40 p-3 outline-none text-sm" maxlength="100">
+                        <input type="text" id="chat-input" placeholder="Speak to the world..." class="flex-grow bg-black/40 p-3 outline-none text-sm">
                         <button type="submit" class="bg-purple-800 px-6 hover:bg-purple-700 transition font-bold text-xs uppercase">Transmit</button>
                     </form>
                 </div>
@@ -86,14 +80,12 @@
 
             <div class="mystic-border bg-gray-900/60 p-6 rounded-2xl">
                 <h2 class="text-xl font-semibold mb-4 border-b border-purple-900 pb-2 text-purple-300 italic">Leaderboard</h2>
-                <ul id="leaderboard-list" class="space-y-4">
-                    <li class="text-xs text-gray-500 animate-pulse text-center">Consulting the Records...</li>
-                </ul>
+                <ul id="leaderboard-list" class="space-y-4"></ul>
             </div>
         </div>
 
         <div id="log" class="mt-8 bg-black/60 p-4 rounded-xl h-24 overflow-y-auto text-[11px] text-gray-500 border border-purple-900/20 font-mono">
-            <p>> The Great Reset has occurred...</p>
+            <p>> The wheel of fate begins to turn...</p>
         </div>
     </div>
 
@@ -112,48 +104,48 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
-        // --- VERSION CONTROL ---
-        const VERSION = 'cultivationSave_v2'; 
+        const VERSION = 'cultivationSave_v3';
 
         const game = {
             state: {
                 playerName: "", qi: 0, realmIndex: 0, baseQiRate: 1, age: 18, maxAge: 100,
-                karma: 0, rootGrade: 1, upgrades: { spirit: 0, tech: 0 }, lastTick: Date.now()
+                upgrades: { spirit: 0, tech: 0 }, lastTick: Date.now()
             },
+            // ALL 93 REALMS
             realms: [
-                { name: "Mortal", requirement: 100, color: "#4c1d95" },
-                { name: "Qi Condensation", requirement: 1000, color: "#1e40af" },
-                { name: "Foundation Building", requirement: 10000, color: "#065f46" },
-                { name: "Golden Core", requirement: 100000, color: "#b45309" },
-                { name: "Nascent Soul", requirement: 1000000, color: "#991b1b" },
-                { name: "Spirit Severing", requirement: 10000000, color: "#701a75" },
-                { name: "Dao Seeking", requirement: 100000000, color: "#1e1b4b" },
-                { name: "Immortal Ascension", requirement: 1000000000, color: "#0f766e" },
-                { name: "Great Emperor", requirement: 10000000000, color: "#431407" },
-                { name: "Eternal Sovereign", requirement: 100000000000, color: "#000000" }
-            ],
-            rootNames: ["Broken", "Mortal", "Spiritual", "Earth", "Heaven", "Divine", "Origin", "Chaos"],
+                // Mortal & Pre-Cultivation
+                "Mortal Body", "Refined Body", "Tempered Flesh", "Bone Forging", "Blood Circulation", "Muscle Cleansing", "Meridian Awakening", "Qi Sense", "Qi Initiation", "Qi Condensation", "Qi Gathering", "Qi Foundation", "Qi Stabilization",
+                // Core Cultivation
+                "Foundation Establishment", "Foundation Perfection", "Spirit Root Awakening", "Spirit Root Tempering", "Spirit Root Harmonization", "Golden Core (Early)", "Golden Core (Middle)", "Golden Core (Late)", "Golden Core (Perfected)",
+                // Soul & Nascent
+                "False Nascent Soul", "Nascent Soul (Early)", "Nascent Soul (Middle)", "Nascent Soul (Late)", "Nascent Soul (Perfected)", "Soul Infant", "Soul Transformation", "Soul Ascension", "Soul Integration",
+                // Heavenly & Dao
+                "Spirit Severing", "Spirit Fusion", "Void Perception", "Void Refinement", "Dao Seed Formation", "Dao Comprehension", "Dao Integration", "Dao Manifestation", "Dao King",
+                // Immortal Ascension
+                "Earth Immortal", "Sky Immortal", "True Immortal", "Golden Immortal", "Heavenly Immortal", "Immortal Lord", "Immortal King", "Immortal Emperor",
+                // Divine & Celestial
+                "Pseudo-God", "Minor Deity", "True Deity", "High Deity", "Divine Lord", "Divine King", "Divine Emperor",
+                // Primordial & Origin
+                "Primordial Body", "Primordial Soul", "Primordial Dao", "Origin Being", "Origin Sovereign", "Origin Emperor",
+                // Transcendent & Beyond
+                "Void Ancestor", "Chaos Walker", "Chaos Sovereign", "Chaos Emperor", "Existence Transcendent", "Law Devourer", "Reality Shaper", "World Creator", "Multiverse Sovereign", "Omni-Existence", "Beyond Heaven", "Boundless One", "Absolute Apex"
+            ].map((name, i) => ({
+                name,
+                requirement: Math.floor(100 * Math.pow(1.6, i)), // Scaling requirement
+                color: `hsl(${260 + (i * 2)}, 70%, ${Math.max(20, 50 - (i/2))}%)`
+            })),
 
             init() {
                 const saved = localStorage.getItem(VERSION);
                 if (saved) {
-                    try {
-                        const parsed = JSON.parse(saved);
-                        this.state = {...this.state, ...parsed, upgrades: {...this.state.upgrades, ...parsed.upgrades}};
-                    } catch(e) {}
-                } else {
-                    localStorage.removeItem('cultivationSave'); // Clear old era
+                    const parsed = JSON.parse(saved);
+                    this.state = {...this.state, ...parsed, upgrades: {...this.state.upgrades, ...parsed.upgrades}};
                 }
-
                 if (!this.state.playerName) {
                     this.state.playerName = prompt("Enter your Daoist Name:") || "Nameless Cultivator";
                     this.saveGame();
                 }
-                
-                this.listenToLeaderboard(); 
-                this.listenToChat(); 
-                this.setupChatForm();
+                this.listenToLeaderboard(); this.listenToChat(); this.setupChatForm();
                 setInterval(() => this.tick(), 100);
                 setInterval(() => this.saveGame(), 5000);
             },
@@ -168,29 +160,27 @@
                 const dt = (now - this.state.lastTick) / 1000;
                 this.state.lastTick = now;
 
-                const techMult = 1 + ((this.state.upgrades?.tech || 0) * 2);
-                const realmMult = Math.pow(1.5, this.state.realmIndex || 0);
-                const totalRate = (this.state.baseQiRate + ((this.state.upgrades?.spirit || 0) * 2)) * techMult * realmMult;
+                const techMult = 1 + ((this.state.upgrades?.tech || 0) * 1.5);
+                const realmMult = Math.pow(1.4, this.state.realmIndex || 0);
+                const totalRate = (this.state.baseQiRate + ((this.state.upgrades?.spirit || 0) * 1)) * techMult * realmMult;
 
-                this.gainQi(isNaN(totalRate) ? 0 : totalRate * dt);
-                this.state.age += dt / 60;
+                const req = this.realms[this.state.realmIndex].requirement;
+                this.state.qi = Math.min(req, (this.state.qi || 0) + (totalRate * dt));
+                this.state.age += dt / 120; // 1 year = 2 minutes
+                
                 if (this.state.age >= this.state.maxAge) this.resetLife();
                 this.render(totalRate);
             },
 
-            gainQi(amount) {
-                const req = this.realms[this.state.realmIndex].requirement;
-                this.state.qi = Math.min(req, (this.state.qi || 0) + amount);
-            },
-
             manualMeditate() {
-                const clickPower = (5 + (this.state.realmIndex * 10)) * (1 + (this.state.upgrades.tech * 2));
-                this.gainQi(clickPower);
+                const clickPower = (5 + (this.state.realmIndex * 15)) * (1 + (this.state.upgrades.tech * 1.5));
+                const req = this.realms[this.state.realmIndex].requirement;
+                this.state.qi = Math.min(req, this.state.qi + clickPower);
             },
 
             getUpgradeCost(type) {
                 const base = type === 'spirit' ? 10 : 50;
-                return Math.floor(base * Math.pow(1.7, this.state.upgrades[type] || 0));
+                return Math.floor(base * Math.pow(1.65, this.state.upgrades[type] || 0));
             },
 
             buyUpgrade(type) {
@@ -204,17 +194,14 @@
             async breakthrough() {
                 const req = this.realms[this.state.realmIndex].requirement;
                 if (this.state.qi >= req) {
-                    if (Math.random() < 0.85) {
-                        this.state.realmIndex++;
-                        this.state.qi = 0;
-                        this.state.maxAge += 150;
-                        await addDoc(collection(db, "highscores"), {
-                            player: this.state.playerName, realm: this.realms[this.state.realmIndex].name,
-                            level: this.state.realmIndex, createdAt: serverTimestamp()
-                        });
-                    } else {
-                        this.state.qi *= 0.5;
-                    }
+                    this.state.realmIndex++;
+                    this.state.qi = 0;
+                    this.state.maxAge += 50;
+                    this.addLog(`Breakthrough! You are now at ${this.realms[this.state.realmIndex].name} realm.`);
+                    await addDoc(collection(db, "highscores"), {
+                        player: this.state.playerName, realm: this.realms[this.state.realmIndex].name,
+                        level: this.state.realmIndex, createdAt: serverTimestamp()
+                    });
                     this.saveGame();
                 }
             },
@@ -225,9 +212,9 @@
                 document.getElementById('qi-bar').style.width = (this.state.qi / current.requirement * 100) + "%";
                 document.getElementById('realm').innerText = current.name;
                 document.getElementById('qi-needed').innerText = this.formatNum(current.requirement);
-                document.getElementById('rate').innerText = (rate || 0).toFixed(1);
+                document.getElementById('rate').innerText = rate.toFixed(1);
                 document.getElementById('age').innerText = Math.floor(this.state.age);
-                document.getElementById('maxAge').innerText = this.state.maxAge;
+                document.getElementById('maxAge').innerText = Math.floor(this.state.maxAge);
                 document.getElementById('tech-level').innerText = `Lv ${this.state.upgrades.tech}`;
                 document.getElementById('player-name-display').innerText = this.state.playerName;
                 
@@ -248,10 +235,14 @@
             },
 
             saveGame() { localStorage.setItem(VERSION, JSON.stringify(this.state)); },
+            addLog(msg) {
+                const log = document.getElementById('log');
+                log.innerHTML = `<p>> [${new Date().toLocaleTimeString()}] ${msg}</p>` + log.innerHTML;
+            },
 
             resetLife() {
-                alert("Your life has ended. Reincarnating...");
-                this.state.qi = 0; this.state.age = 18; this.saveGame();
+                alert("Your time is up. Your essence returns to the void.");
+                localStorage.removeItem(VERSION);
                 location.reload();
             },
 
@@ -265,12 +256,12 @@
                             <div class="text-[10px] text-yellow-500 uppercase font-bold">${data.realm}</div>
                         </li>`;
                     });
-                    document.getElementById('leaderboard-list').innerHTML = h || "Awaiting legends...";
+                    document.getElementById('leaderboard-list').innerHTML = h;
                 });
             },
 
             listenToChat() {
-                const q = query(collection(db, "messages"), orderBy("createdAt", "desc"), limit(15));
+                const q = query(collection(db, "messages"), orderBy("createdAt", "desc"), limit(10));
                 onSnapshot(q, (sn) => {
                     const container = document.getElementById('chat-messages');
                     container.innerHTML = "";
@@ -290,7 +281,7 @@
                     const text = i.value.trim();
                     if (!text) return;
                     i.value = "";
-                    await addDoc(collection(db, "messages"), { user: this.state.playerName, text: text, createdAt: serverTimestamp() });
+                    await addDoc(collection(db, "messages"), { user: this.state.playerName, text, createdAt: serverTimestamp() });
                 };
             }
         };
@@ -300,17 +291,9 @@
 
         const canvas = document.getElementById('particleCanvas');
         const ctx = canvas.getContext('2d');
-        class Particle {
-            constructor() { this.reset(); }
-            reset() { this.x = canvas.width/2; this.y = canvas.height/2; this.size = Math.random()*2+1; this.speedX = (Math.random()-0.5)*5; this.speedY = (Math.random()-0.5)*5; this.life = 1; }
-            update() { this.x += this.speedX; this.y += this.speedY; this.life -= 0.01; if(this.life<=0) this.reset(); }
-            draw() { ctx.fillStyle = `rgba(167,139,250,${this.life})`; ctx.beginPath(); ctx.arc(this.x,this.y,this.size,0,Math.PI*2); ctx.fill(); }
-        }
-        let particles = Array.from({length:30}, () => new Particle());
         function animate() { 
             canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight;
             ctx.clearRect(0,0,canvas.width,canvas.height); 
-            particles.forEach(p => { p.update(); p.draw(); }); 
             requestAnimationFrame(animate); 
         }
         animate();
