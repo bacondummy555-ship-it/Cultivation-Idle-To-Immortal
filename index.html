@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Path to Immortality | 93 Realms of Power</title>
+    <title>Path to Immortality | Heavenly Tribulations</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --realm-color: #4c1d95; }
@@ -11,11 +11,23 @@
         .qi-gradient { background: linear-gradient(135deg, var(--realm-color) 0%, #1e1b4b 100%); box-shadow: 0 0 15px var(--realm-color); }
         .progress-bar { transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .mystic-border { border: 1px solid rgba(139, 92, 246, 0.3); box-shadow: inset 0 0 15px rgba(0,0,0,0.7); }
-        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
+        
+        /* Shake effect for failed tribulations */
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
         .meditate-anim { animation: float 3s ease-in-out infinite; }
-        #chat-messages { height: 200px; overflow-y: auto; display: flex; flex-direction: column-reverse; scroll-behavior: smooth; }
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
+        #chat-messages { height: 200px; overflow-y: auto; display: flex; flex-direction: column-reverse; }
         .stat-val { font-family: 'Courier New', monospace; font-weight: bold; color: #a78bfa; }
         .btn-upgrade:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
+        .tribulation-warning { color: #ef4444; font-weight: bold; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -42,12 +54,12 @@
                 <div class="space-y-3 text-sm border-t border-purple-900/30 pt-4">
                     <div class="flex justify-between"><span>Absorption Rate:</span> <span id="rate" class="text-green-400 stat-val">1.0</span>/s</div>
                     <div class="flex justify-between"><span>Technique:</span> <span id="tech-level" class="text-orange-400">Lv 0</span></div>
+                    <div class="flex justify-between"><span>Tribulation Risk:</span> <span id="success-chance" class="text-blue-400 font-bold">0%</span></div>
                 </div>
             </div>
 
             <div class="lg:col-span-2 flex flex-col gap-6">
-                <div class="mystic-border bg-gray-900/80 p-12 rounded-2xl text-center relative overflow-hidden h-72 flex items-center justify-center">
-                    <canvas id="particleCanvas" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
+                <div id="main-display" class="mystic-border bg-gray-900/80 p-12 rounded-2xl text-center relative overflow-hidden h-72 flex items-center justify-center">
                     <div class="meditate-anim relative z-10">
                         <button onclick="window.game.manualMeditate()" class="group relative bg-purple-700 hover:bg-purple-600 px-12 py-6 rounded-full font-black text-xl transition-all active:scale-95 shadow-[0_0_30px_rgba(139,92,246,0.5)] border-2 border-purple-400/30">
                             GATHER QI
@@ -65,7 +77,7 @@
                         <div class="text-sm font-mono text-yellow-500">Cost: <span id="upg-tech-cost">50</span></div>
                     </button>
                     <button onclick="window.game.breakthrough()" id="btn-breakthrough" class="sm:col-span-2 hidden bg-gradient-to-r from-yellow-600 to-yellow-400 p-4 rounded-xl font-black text-black hover:brightness-110 transition shadow-[0_0_25px_rgba(234,179,8,0.5)] uppercase">
-                        Attempt Breakthrough
+                        FACING TRIBULATION
                     </button>
                 </div>
 
@@ -104,42 +116,35 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const VERSION = 'cultivationSave_v3';
+        const VERSION = 'cultivationSave_v4'; // Upgraded version for new mechanics
 
         const game = {
             state: {
                 playerName: "", qi: 0, realmIndex: 0, baseQiRate: 1, age: 18, maxAge: 100,
                 upgrades: { spirit: 0, tech: 0 }, lastTick: Date.now()
             },
-            // ALL 93 REALMS
             realms: [
-                // Mortal & Pre-Cultivation
                 "Mortal Body", "Refined Body", "Tempered Flesh", "Bone Forging", "Blood Circulation", "Muscle Cleansing", "Meridian Awakening", "Qi Sense", "Qi Initiation", "Qi Condensation", "Qi Gathering", "Qi Foundation", "Qi Stabilization",
-                // Core Cultivation
                 "Foundation Establishment", "Foundation Perfection", "Spirit Root Awakening", "Spirit Root Tempering", "Spirit Root Harmonization", "Golden Core (Early)", "Golden Core (Middle)", "Golden Core (Late)", "Golden Core (Perfected)",
-                // Soul & Nascent
                 "False Nascent Soul", "Nascent Soul (Early)", "Nascent Soul (Middle)", "Nascent Soul (Late)", "Nascent Soul (Perfected)", "Soul Infant", "Soul Transformation", "Soul Ascension", "Soul Integration",
-                // Heavenly & Dao
                 "Spirit Severing", "Spirit Fusion", "Void Perception", "Void Refinement", "Dao Seed Formation", "Dao Comprehension", "Dao Integration", "Dao Manifestation", "Dao King",
-                // Immortal Ascension
                 "Earth Immortal", "Sky Immortal", "True Immortal", "Golden Immortal", "Heavenly Immortal", "Immortal Lord", "Immortal King", "Immortal Emperor",
-                // Divine & Celestial
                 "Pseudo-God", "Minor Deity", "True Deity", "High Deity", "Divine Lord", "Divine King", "Divine Emperor",
-                // Primordial & Origin
                 "Primordial Body", "Primordial Soul", "Primordial Dao", "Origin Being", "Origin Sovereign", "Origin Emperor",
-                // Transcendent & Beyond
                 "Void Ancestor", "Chaos Walker", "Chaos Sovereign", "Chaos Emperor", "Existence Transcendent", "Law Devourer", "Reality Shaper", "World Creator", "Multiverse Sovereign", "Omni-Existence", "Beyond Heaven", "Boundless One", "Absolute Apex"
             ].map((name, i) => ({
                 name,
-                requirement: Math.floor(100 * Math.pow(1.6, i)), // Scaling requirement
-                color: `hsl(${260 + (i * 2)}, 70%, ${Math.max(20, 50 - (i/2))}%)`
+                requirement: Math.floor(100 * Math.pow(1.65, i)),
+                color: `hsl(${260 + (i * 2)}, 70%, ${Math.max(20, 50 - (i/2))}%)`,
+                // Tribulations start getting hard after realm 10
+                successChance: Math.max(0.1, 1 - (Math.max(0, i - 10) * 0.02))
             })),
 
             init() {
                 const saved = localStorage.getItem(VERSION);
                 if (saved) {
                     const parsed = JSON.parse(saved);
-                    this.state = {...this.state, ...parsed, upgrades: {...this.state.upgrades, ...parsed.upgrades}};
+                    this.state = {...this.state, ...parsed};
                 }
                 if (!this.state.playerName) {
                     this.state.playerName = prompt("Enter your Daoist Name:") || "Nameless Cultivator";
@@ -166,7 +171,7 @@
 
                 const req = this.realms[this.state.realmIndex].requirement;
                 this.state.qi = Math.min(req, (this.state.qi || 0) + (totalRate * dt));
-                this.state.age += dt / 120; // 1 year = 2 minutes
+                this.state.age += dt / 120;
                 
                 if (this.state.age >= this.state.maxAge) this.resetLife();
                 this.render(totalRate);
@@ -180,7 +185,7 @@
 
             getUpgradeCost(type) {
                 const base = type === 'spirit' ? 10 : 50;
-                return Math.floor(base * Math.pow(1.65, this.state.upgrades[type] || 0));
+                return Math.floor(base * Math.pow(1.7, this.state.upgrades[type] || 0));
             },
 
             buyUpgrade(type) {
@@ -192,16 +197,26 @@
             },
 
             async breakthrough() {
-                const req = this.realms[this.state.realmIndex].requirement;
-                if (this.state.qi >= req) {
-                    this.state.realmIndex++;
-                    this.state.qi = 0;
-                    this.state.maxAge += 50;
-                    this.addLog(`Breakthrough! You are now at ${this.realms[this.state.realmIndex].name} realm.`);
-                    await addDoc(collection(db, "highscores"), {
-                        player: this.state.playerName, realm: this.realms[this.state.realmIndex].name,
-                        level: this.state.realmIndex, createdAt: serverTimestamp()
-                    });
+                const current = this.realms[this.state.realmIndex];
+                if (this.state.qi >= current.requirement) {
+                    if (Math.random() <= current.successChance) {
+                        // SUCCESS
+                        this.state.realmIndex++;
+                        this.state.qi = 0;
+                        this.state.maxAge += 50;
+                        this.addLog(`<span class="text-yellow-400">⚡ Breakthrough Success! Reached: ${this.realms[this.state.realmIndex].name}</span>`);
+                        await addDoc(collection(db, "highscores"), {
+                            player: this.state.playerName, realm: this.realms[this.state.realmIndex].name,
+                            level: this.state.realmIndex, createdAt: serverTimestamp()
+                        });
+                    } else {
+                        // FAILURE
+                        this.state.qi = Math.floor(this.state.qi * 0.5);
+                        this.addLog(`<span class="text-red-500">❌ The Heavens reject you! Qi scattered by 50%.</span>`);
+                        const display = document.getElementById('main-display');
+                        display.classList.add('shake');
+                        setTimeout(() => display.classList.remove('shake'), 500);
+                    }
                     this.saveGame();
                 }
             },
@@ -217,6 +232,7 @@
                 document.getElementById('maxAge').innerText = Math.floor(this.state.maxAge);
                 document.getElementById('tech-level').innerText = `Lv ${this.state.upgrades.tech}`;
                 document.getElementById('player-name-display').innerText = this.state.playerName;
+                document.getElementById('success-chance').innerText = (current.successChance * 100).toFixed(0) + "%";
                 
                 const sCost = this.getUpgradeCost('spirit');
                 const tCost = this.getUpgradeCost('tech');
@@ -237,11 +253,13 @@
             saveGame() { localStorage.setItem(VERSION, JSON.stringify(this.state)); },
             addLog(msg) {
                 const log = document.getElementById('log');
-                log.innerHTML = `<p>> [${new Date().toLocaleTimeString()}] ${msg}</p>` + log.innerHTML;
+                const entry = document.createElement('p');
+                entry.innerHTML = `> [${new Date().toLocaleTimeString()}] ${msg}`;
+                log.prepend(entry);
             },
 
             resetLife() {
-                alert("Your time is up. Your essence returns to the void.");
+                alert("Your lifespan has been exhausted. You dissolve into the Dao.");
                 localStorage.removeItem(VERSION);
                 location.reload();
             },
@@ -288,15 +306,6 @@
 
         window.game = game;
         window.game.init();
-
-        const canvas = document.getElementById('particleCanvas');
-        const ctx = canvas.getContext('2d');
-        function animate() { 
-            canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight;
-            ctx.clearRect(0,0,canvas.width,canvas.height); 
-            requestAnimationFrame(animate); 
-        }
-        animate();
     </script>
 </body>
 </html>
