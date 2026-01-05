@@ -12,54 +12,12 @@
         .mystic-border { border: 1px solid rgba(139, 92, 246, 0.3); }
         @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
         .meditate-anim { animation: float 3s ease-in-out infinite; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #4c1d95; border-radius: 10px; }
     </style>
-    <script type="module">
-    // 1. IMPORT FIREBASE
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-    // 2. PASTE YOUR CONFIG HERE
-    const firebaseConfig = {
-        apiKey: "AIzaSyD7N-ZUGKm9hasgM0DD08scouydEEuiLvU",
-        authDomain: "path-to-immortality-78ad8.firebaseapp.com",
-        projectId: "path-to-immortality-78ad8",
-        storageBucket: "path-to-immortality-78ad8.firebasestorage.app",
-        messagingSenderId: "653760996266",
-        appId: "1:653760996266:web:59c8dc7158cba0722e01d3"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    // 3. LEADERBOARD LOGIC
-    async function saveToLeaderboard(name, realm) {
-        await addDoc(collection(db, "highscores"), {
-            player: name,
-            realm: realm,
-            date: Date.now()
-        });
-        loadLeaderboard();
-    }
-
-    async function loadLeaderboard() {
-        const q = query(collection(db, "highscores"), orderBy("date", "desc"), limit(5));
-        const querySnapshot = await getDocs(q);
-        let html = "";
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            html += `<li>${data.player} - <span class="text-purple-400">${data.realm}</span></li>`;
-        });
-        document.getElementById('leaderboard-list').innerHTML = html;
-    }
-
-    // 4. PARTICLE SYSTEM (VISUALS)
-    const canvas = document.getElementById('particleCanvas');
-    const ctx = canvas.getContext('2d');
-    // ... (Insert the Particle class code from previous response here)
-</script>
 </head>
 <body class="p-4 md:p-8">
-    <div class="max-w-4xl mx-auto">
+    <div class="max-w-6xl mx-auto">
         <header class="text-center mb-8">
             <h1 class="text-4xl font-bold text-purple-400 mb-2">Immortal Path</h1>
             <div class="flex justify-center gap-4 text-sm text-gray-400">
@@ -68,182 +26,206 @@
             </div>
         </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <div class="mystic-border bg-gray-900/50 p-6 rounded-xl">
                 <h2 class="text-xl font-semibold mb-4 border-b border-purple-900 pb-2">Cultivation</h2>
                 <div class="mb-6">
-                    <div class="flex justify-between mb-1 text-sm">
-                        <span>Qi Essence</span>
-                        <span id="qi-display">0</span>
-                    </div>
+                    <div class="flex justify-between mb-1 text-sm"><span>Qi Essence</span><span id="qi-display">0</span></div>
                     <div class="w-full bg-gray-800 rounded-full h-4 overflow-hidden">
                         <div id="qi-bar" class="qi-gradient h-full progress-bar" style="width: 0%"></div>
                     </div>
                     <p class="text-xs text-gray-500 mt-2">Next Realm: <span id="qi-needed">100</span> Qi</p>
                 </div>
-                
                 <div class="space-y-2 text-sm">
-                    <div class="flex justify-between"><span>Absorption Rate:</span> <span id="rate">1.0</span>/s</div>
+                    <div class="flex justify-between"><span>Absorption:</span> <span id="rate">1.0</span>/s</div>
                     <div class="flex justify-between"><span>Spirit Root:</span> <span class="text-green-400">Grade D</span></div>
                 </div>
             </div>
 
-            <div class="md:col-span-2 flex flex-col gap-6">
-                <div class="mystic-border bg-gray-900/80 p-12 rounded-xl text-center relative overflow-hidden">
+            <div class="lg:col-span-2 flex flex-col gap-6">
+                <div class="mystic-border bg-gray-900/80 p-12 rounded-xl text-center relative overflow-hidden h-64 flex items-center justify-center">
+                    <canvas id="particleCanvas" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
+                    
                     <div class="meditate-anim relative z-10">
-                        <div class="w-32 h-32 mx-auto rounded-full border-4 border-purple-500/30 flex items-center justify-center mb-4 shadow-[0_0_50px_rgba(139,92,246,0.2)]">
-                            <span class="text-5xl">🧘‍♂️</span>
-                        </div>
-                        <button onclick="manualMeditate()" class="bg-purple-700 hover:bg-purple-600 px-8 py-3 rounded-full font-bold transition-all active:scale-95 shadow-lg">
+                        <button onclick="window.game.manualMeditate()" class="bg-purple-700 hover:bg-purple-600 px-10 py-4 rounded-full font-bold transition-all active:scale-95 shadow-[0_0_20px_rgba(139,92,246,0.4)]">
                             Gather Qi
                         </button>
                     </div>
-                    <div class="absolute inset-0 opacity-10 pointer-events-none flex items-center justify-center text-[10rem]">☯</div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <button onclick="buyUpgrade('spirit')" id="upg-spirit" class="mystic-border p-4 rounded-lg bg-gray-800 hover:bg-gray-700 text-left transition">
+                    <button onclick="window.game.buyUpgrade('spirit')" id="upg-spirit" class="mystic-border p-4 rounded-lg bg-gray-800 hover:bg-gray-700 text-left transition">
                         <div class="font-bold text-purple-300">Spirit Stone</div>
-                        <div class="text-xs text-gray-400 mb-2">Passively increases Qi gather rate</div>
                         <div class="text-sm font-mono text-yellow-500">Cost: <span id="upg-spirit-cost">10</span> Qi</div>
                     </button>
-
-                    <button onclick="breakthrough()" id="btn-breakthrough" class="hidden mystic-border p-4 rounded-lg bg-yellow-900/20 border-yellow-500/50 hover:bg-yellow-900/40 text-left transition border-dashed">
-                        <div class="font-bold text-yellow-400">Breakthrough!</div>
-                        <div class="text-xs text-gray-400 mb-2">Risk the tribulation to ascend realms</div>
-                        <div class="text-sm font-mono text-yellow-500">Requires Full Qi</div>
+                    <button onclick="window.game.breakthrough()" id="btn-breakthrough" class="hidden mystic-border p-4 rounded-lg bg-yellow-900/20 border-yellow-500/50 hover:bg-yellow-900/40 text-left transition border-dashed">
+                        <div class="font-bold text-yellow-400">Ascend Realm</div>
+                        <div class="text-xs text-gray-300">Click to Breakthrough!</div>
                     </button>
                 </div>
+            </div>
+
+            <div class="mystic-border bg-gray-900/50 p-6 rounded-xl">
+                <h2 class="text-xl font-semibold mb-4 border-b border-purple-900 pb-2 flex justify-between">
+                    Top Immortals
+                    <span class="text-xs text-purple-400 animate-pulse">Online</span>
+                </h2>
+                <ul id="leaderboard-list" class="space-y-3 text-sm italic text-gray-400">
+                    <li>Invoking Spirit World...</li>
+                </ul>
             </div>
         </div>
 
         <div class="mt-8">
-            <div id="log" class="bg-black/40 p-4 rounded-lg h-32 overflow-y-auto text-sm text-gray-500 border border-gray-800">
-                <p>> You begin your journey on the Path to Immortality...</p>
+            <div id="log" class="bg-black/40 p-4 rounded-lg h-24 overflow-y-auto text-xs text-gray-500 border border-gray-800">
+                <p>> You begin your journey...</p>
             </div>
         </div>
     </div>
 
-    <script>
-        // Game State
-        let state = {
-            qi: 0,
-            totalQi: 0,
-            realmIndex: 0,
-            qiRate: 0,
-            age: 18,
-            maxAge: 100,
-            upgrades: { spirit: 0 },
-            lastTick: Date.now()
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD7N-ZUGKm9hasgM0DD08scouydEEuiLvU",
+            authDomain: "path-to-immortality-78ad8.firebaseapp.com",
+            projectId: "path-to-immortality-78ad8",
+            storageBucket: "path-to-immortality-78ad8.firebasestorage.app",
+            messagingSenderId: "653760996266",
+            appId: "1:653760996266:web:59c8dc7158cba0722e01d3"
         };
 
-        const realms = [
-            { name: "Mortal", requirement: 100 },
-            { name: "Qi Condensation", requirement: 1000 },
-            { name: "Foundation Establishment", requirement: 10000 },
-            { name: "Core Formation", requirement: 100000 },
-            { name: "Nascent Soul", requirement: 1000000 }
-        ];
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-        // Core Functions
-        function update() {
-            const now = Date.now();
-            const dt = (now - state.lastTick) / 1000;
-            state.lastTick = now;
-
-            // Passive Growth
-            if (state.qiRate > 0) {
-                gainQi(state.qiRate * dt);
+        // --- PARTICLE SYSTEM ---
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+        let particles = [];
+        class Particle {
+            constructor() { this.reset(); }
+            reset() {
+                this.x = canvas.width/2; this.y = canvas.height/2;
+                this.size = Math.random() * 2 + 1;
+                this.speedX = (Math.random() - 0.5) * 3;
+                this.speedY = (Math.random() - 0.5) * 3;
+                this.life = 1;
             }
-
-            // Aging (1 year every 60 seconds)
-            state.age += dt / 60;
-            if (state.age >= state.maxAge) {
-                addLog("You have reached the end of your lifespan. You pass away peacefully...");
-                resetGame();
+            update() {
+                this.x += this.speedX; this.y += this.speedY; this.life -= 0.01;
+                if (this.life <= 0) this.reset();
             }
-
-            render();
-        }
-
-        function gainQi(amount) {
-            const req = realms[state.realmIndex].requirement;
-            if (state.qi < req) {
-                state.qi = Math.min(req, state.qi + amount);
+            draw() {
+                ctx.fillStyle = `rgba(167, 139, 250, ${this.life})`;
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); ctx.fill();
             }
         }
-
-        function manualMeditate() {
-            gainQi(1 + (state.realmIndex * 5));
-            render();
+        for(let i=0; i<30; i++) particles.push(new Particle());
+        function animate() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animate);
         }
+        animate();
 
-        function buyUpgrade(type) {
-            const cost = 10 * Math.pow(1.5, state.upgrades[type]);
-            if (state.qi >= cost) {
-                state.qi -= cost;
-                state.upgrades[type]++;
-                state.qiRate += 0.5 * (state.realmIndex + 1);
-                addLog(`You acquired a Spirit Stone. Qi flow improves.`);
+        // --- GAME LOGIC ---
+        window.game = {
+            state: {
+                qi: 0, realmIndex: 0, qiRate: 0, age: 18, maxAge: 100, 
+                upgrades: { spirit: 0 }, lastTick: Date.now()
+            },
+            realms: [
+                { name: "Mortal", requirement: 100 },
+                { name: "Qi Condensation", requirement: 1000 },
+                { name: "Foundation Establishment", requirement: 10000 },
+                { name: "Core Formation", requirement: 100000 },
+                { name: "Nascent Soul", requirement: 1000000 }
+            ],
+            init() {
+                const saved = localStorage.getItem('cultivationSave');
+                if (saved) Object.assign(this.state, JSON.parse(saved));
+                this.listenToLeaderboard();
+                setInterval(() => this.update(), 100);
+            },
+            update() {
+                const now = Date.now();
+                const dt = (now - this.state.lastTick) / 1000;
+                this.state.lastTick = now;
+                if (this.state.qiRate > 0) this.gainQi(this.state.qiRate * dt);
+                this.state.age += dt / 60;
+                if (this.state.age >= this.state.maxAge) this.resetGame();
+                this.render();
+            },
+            gainQi(amount) {
+                const req = this.realms[this.state.realmIndex].requirement;
+                this.state.qi = Math.min(req, this.state.qi + amount);
+            },
+            manualMeditate() { this.gainQi(1 + (this.state.realmIndex * 5)); },
+            buyUpgrade(type) {
+                const cost = 10 * Math.pow(1.5, this.state.upgrades[type]);
+                if (this.state.qi >= cost) {
+                    this.state.qi -= cost;
+                    this.state.upgrades[type]++;
+                    this.state.qiRate += 0.5 * (this.state.realmIndex + 1);
+                    this.addLog("Absorbed Spirit Stone essence.");
+                }
+            },
+            async breakthrough() {
+                const req = this.realms[this.state.realmIndex].requirement;
+                if (this.state.qi >= req) {
+                    this.state.realmIndex++;
+                    this.state.qi = 0;
+                    this.state.maxAge += 100;
+                    this.addLog(`Breakthrough to ${this.realms[this.state.realmIndex].name}!`);
+                    this.saveGame();
+                    // Post to Online Leaderboard
+                    await addDoc(collection(db, "highscores"), {
+                        player: "Cultivator_" + Math.floor(Math.random()*1000),
+                        realm: this.realms[this.state.realmIndex].name,
+                        level: this.state.realmIndex,
+                        createdAt: serverTimestamp()
+                    });
+                }
+            },
+            render() {
+                const current = this.realms[this.state.realmIndex];
+                document.getElementById('qi-display').innerText = Math.floor(this.state.qi);
+                document.getElementById('qi-bar').style.width = (this.state.qi / current.requirement * 100) + "%";
+                document.getElementById('realm').innerText = current.name;
+                document.getElementById('qi-needed').innerText = current.requirement;
+                document.getElementById('rate').innerText = this.state.qiRate.toFixed(1);
+                document.getElementById('age').innerText = Math.floor(this.state.age);
+                document.getElementById('maxAge').innerText = this.state.maxAge;
+                document.getElementById('upg-spirit-cost').innerText = Math.floor(10 * Math.pow(1.5, this.state.upgrades.spirit));
+                const btn = document.getElementById('btn-breakthrough');
+                if (this.state.qi >= current.requirement && this.state.realmIndex < this.realms.length - 1) btn.classList.remove('hidden');
+                else btn.classList.add('hidden');
+            },
+            addLog(msg) {
+                const log = document.getElementById('log');
+                log.innerHTML = `<p>> ${msg}</p>` + log.innerHTML;
+            },
+            saveGame() { localStorage.setItem('cultivationSave', JSON.stringify(this.state)); },
+            resetGame() { localStorage.removeItem('cultivationSave'); location.reload(); },
+            listenToLeaderboard() {
+                const q = query(collection(db, "highscores"), orderBy("level", "desc"), limit(8));
+                onSnapshot(q, (snapshot) => {
+                    let html = "";
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        html += `<li class="border-l-2 border-purple-500 pl-2 py-1 bg-white/5">
+                                    <span class="text-white font-bold">${data.player}</span><br>
+                                    <span class="text-xs text-yellow-500">${data.realm}</span>
+                                 </li>`;
+                    });
+                    document.getElementById('leaderboard-list').innerHTML = html || "No legends yet...";
+                });
             }
-        }
-
-        function breakthrough() {
-            const req = realms[state.realmIndex].requirement;
-            if (state.qi >= req) {
-                state.realmIndex++;
-                state.qi = 0;
-                state.maxAge += 100; // Cultivation extends life
-                addLog(`TREMENDOUS! You have broken through to ${realms[state.realmIndex].name}!`);
-                saveGame();
-            }
-        }
-
-        // UI & Systems
-        function render() {
-            const currentRealm = realms[state.realmIndex];
-            document.getElementById('qi-display').innerText = Math.floor(state.qi);
-            document.getElementById('qi-bar').style.width = (state.qi / currentRealm.requirement * 100) + "%";
-            document.getElementById('realm').innerText = currentRealm.name;
-            document.getElementById('qi-needed').innerText = currentRealm.requirement;
-            document.getElementById('rate').innerText = state.qiRate.toFixed(1);
-            document.getElementById('age').innerText = Math.floor(state.age);
-            document.getElementById('maxAge').innerText = state.maxAge;
-            
-            document.getElementById('upg-spirit-cost').innerText = Math.floor(10 * Math.pow(1.5, state.upgrades.spirit));
-            
-            // Show/Hide Breakthrough
-            const btn = document.getElementById('btn-breakthrough');
-            if (state.qi >= currentRealm.requirement && state.realmIndex < realms.length - 1) {
-                btn.classList.remove('hidden');
-            } else {
-                btn.classList.add('hidden');
-            }
-        }
-
-        function addLog(msg) {
-            const log = document.getElementById('log');
-            log.innerHTML = `<p>> ${msg}</p>` + log.innerHTML;
-        }
-
-        function saveGame() {
-            localStorage.setItem('cultivationSave', JSON.stringify(state));
-        }
-
-        function loadGame() {
-            const saved = localStorage.getItem('cultivationSave');
-            if (saved) state = Object.assign(state, JSON.parse(saved));
-        }
-
-        function resetGame() {
-            localStorage.removeItem('cultivationSave');
-            location.reload();
-        }
-
-        // Initialization
-        loadGame();
-        setInterval(update, 100);
-        setInterval(saveGame, 10000); // Autosave every 10s
+        };
+        window.game.init();
     </script>
 </body>
 </html>
