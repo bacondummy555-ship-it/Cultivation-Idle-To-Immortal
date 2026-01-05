@@ -76,7 +76,6 @@
                 </div>
 
                 <div class="mystic-border bg-gray-900/50 rounded-2xl overflow-hidden flex flex-col">
-                    <div class="bg-purple-900/40 p-2 text-[10px] font-bold border-b border-purple-900/50 text-purple-200 text-center tracking-widest uppercase">Heavenly Communications</div>
                     <div id="chat-messages" class="p-4 space-y-2 text-sm"></div>
                     <form id="chat-form" class="flex border-t border-purple-900/50">
                         <input type="text" id="chat-input" placeholder="Speak to the world..." class="flex-grow bg-black/40 p-3 outline-none text-sm" maxlength="100">
@@ -94,7 +93,7 @@
         </div>
 
         <div id="log" class="mt-8 bg-black/60 p-4 rounded-xl h-24 overflow-y-auto text-[11px] text-gray-500 border border-purple-900/20 font-mono">
-            <p>> Fate is being written...</p>
+            <p>> The Great Reset has occurred...</p>
         </div>
     </div>
 
@@ -102,7 +101,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyD7N-ZUGKm9hasgM0DD08scouydEEuiLvU",
             authDomain: "path-to-immortality-78ad8.firebaseapp.com",
@@ -115,42 +113,13 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- PARTICLE FX ---
-        const canvas = document.getElementById('particleCanvas');
-        const ctx = canvas.getContext('2d');
-        const resize = () => { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; };
-        window.addEventListener('resize', resize); resize();
+        // --- VERSION CONTROL ---
+        const VERSION = 'cultivationSave_v2'; 
 
-        let particles = [];
-        class Particle {
-            constructor() { this.reset(); }
-            reset() {
-                this.x = canvas.width/2; this.y = canvas.height/2;
-                this.size = Math.random() * 2 + 1;
-                this.speedX = (Math.random() - 0.5) * 5;
-                this.speedY = (Math.random() - 0.5) * 5;
-                this.life = 1;
-            }
-            update() { this.x += this.speedX; this.y += this.speedY; this.life -= 0.01; if (this.life <= 0) this.reset(); }
-            draw() { ctx.fillStyle = `rgba(167, 139, 250, ${this.life})`; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); ctx.fill(); }
-        }
-        for(let i=0; i<30; i++) particles.push(new Particle());
-        function animate() { ctx.clearRect(0,0,canvas.width,canvas.height); particles.forEach(p => { p.update(); p.draw(); }); requestAnimationFrame(animate); }
-        animate();
-
-        // --- GAME LOGIC ---
-        const gameInstance = {
+        const game = {
             state: {
-                playerName: localStorage.getItem('playerName') || "",
-                qi: 0,
-                realmIndex: 0,
-                baseQiRate: 1,
-                age: 18,
-                maxAge: 100,
-                karma: parseInt(localStorage.getItem('karma')) || 0,
-                rootGrade: parseInt(localStorage.getItem('rootGrade')) || 1,
-                upgrades: { spirit: 0, tech: 0 },
-                lastTick: Date.now()
+                playerName: "", qi: 0, realmIndex: 0, baseQiRate: 1, age: 18, maxAge: 100,
+                karma: 0, rootGrade: 1, upgrades: { spirit: 0, tech: 0 }, lastTick: Date.now()
             },
             realms: [
                 { name: "Mortal", requirement: 100, color: "#4c1d95" },
@@ -167,26 +136,31 @@
             rootNames: ["Broken", "Mortal", "Spiritual", "Earth", "Heaven", "Divine", "Origin", "Chaos"],
 
             init() {
+                const saved = localStorage.getItem(VERSION);
+                if (saved) {
+                    try {
+                        const parsed = JSON.parse(saved);
+                        this.state = {...this.state, ...parsed, upgrades: {...this.state.upgrades, ...parsed.upgrades}};
+                    } catch(e) {}
+                } else {
+                    localStorage.removeItem('cultivationSave'); // Clear old era
+                }
+
                 if (!this.state.playerName) {
                     this.state.playerName = prompt("Enter your Daoist Name:") || "Nameless Cultivator";
-                    localStorage.setItem('playerName', this.state.playerName);
-                }
-                const saved = localStorage.getItem('cultivationSave');
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    Object.assign(this.state, parsed);
+                    this.saveGame();
                 }
                 
                 this.listenToLeaderboard(); 
                 this.listenToChat(); 
                 this.setupChatForm();
                 setInterval(() => this.tick(), 100);
-                setInterval(() => this.saveGame(), 10000);
+                setInterval(() => this.saveGame(), 5000);
             },
 
             formatNum(num) {
-                if (num >= 1000000) return num.toExponential(2);
-                return Math.floor(num).toLocaleString();
+                if (isNaN(num)) return "0";
+                return num >= 1000000 ? num.toExponential(2) : Math.floor(num).toLocaleString();
             },
 
             tick() {
@@ -194,32 +168,29 @@
                 const dt = (now - this.state.lastTick) / 1000;
                 this.state.lastTick = now;
 
-                const techMult = 1 + (this.state.upgrades.tech * 2);
-                const realmMult = Math.pow(1.5, this.state.realmIndex); 
-                const rootMult = 1 + (this.state.rootGrade * 0.5);
-                const totalRate = (this.state.baseQiRate + (this.state.upgrades.spirit * 2)) * techMult * realmMult * rootMult;
+                const techMult = 1 + ((this.state.upgrades?.tech || 0) * 2);
+                const realmMult = Math.pow(1.5, this.state.realmIndex || 0);
+                const totalRate = (this.state.baseQiRate + ((this.state.upgrades?.spirit || 0) * 2)) * techMult * realmMult;
 
-                this.gainQi(totalRate * dt);
+                this.gainQi(isNaN(totalRate) ? 0 : totalRate * dt);
                 this.state.age += dt / 60;
-                
-                if (this.state.age >= this.state.maxAge) this.resetGame();
+                if (this.state.age >= this.state.maxAge) this.resetLife();
                 this.render(totalRate);
             },
 
             gainQi(amount) {
                 const req = this.realms[this.state.realmIndex].requirement;
-                this.state.qi = Math.min(req, this.state.qi + amount);
+                this.state.qi = Math.min(req, (this.state.qi || 0) + amount);
             },
 
             manualMeditate() {
-                const techMult = 1 + (this.state.upgrades.tech * 2.5);
-                const clickPower = (5 + (this.state.realmIndex * 10)) * techMult;
+                const clickPower = (5 + (this.state.realmIndex * 10)) * (1 + (this.state.upgrades.tech * 2));
                 this.gainQi(clickPower);
             },
 
             getUpgradeCost(type) {
                 const base = type === 'spirit' ? 10 : 50;
-                return Math.floor(base * Math.pow(1.7, this.state.upgrades[type]));
+                return Math.floor(base * Math.pow(1.7, this.state.upgrades[type] || 0));
             },
 
             buyUpgrade(type) {
@@ -227,37 +198,22 @@
                 if (this.state.qi >= cost) {
                     this.state.qi -= cost;
                     this.state.upgrades[type]++;
-                    this.addLog(`Improved your ${type === 'spirit' ? 'Array' : 'Method'}.`);
                 }
             },
 
             async breakthrough() {
                 const req = this.realms[this.state.realmIndex].requirement;
                 if (this.state.qi >= req) {
-                    const successChance = 0.85; 
-                    if (Math.random() <= successChance) {
+                    if (Math.random() < 0.85) {
                         this.state.realmIndex++;
                         this.state.qi = 0;
                         this.state.maxAge += 150;
-                        this.state.karma += (this.state.realmIndex * 50);
-                        this.addLog(`⚡ SUCCESS! You reached the ${this.realms[this.state.realmIndex].name} Realm!`);
-                        
-                        try {
-                            await addDoc(collection(db, "highscores"), {
-                                player: this.state.playerName,
-                                realm: this.realms[this.state.realmIndex].name,
-                                level: this.state.realmIndex,
-                                createdAt: serverTimestamp()
-                            });
-                            await addDoc(collection(db, "messages"), {
-                                user: "HEAVENLY WILL",
-                                text: `The world shakes as ${this.state.playerName} ascends to the ${this.realms[this.state.realmIndex].name} realm!`,
-                                isAnnouncement: true, createdAt: serverTimestamp()
-                            });
-                        } catch(e) { console.error("Cloud Error", e); }
+                        await addDoc(collection(db, "highscores"), {
+                            player: this.state.playerName, realm: this.realms[this.state.realmIndex].name,
+                            level: this.state.realmIndex, createdAt: serverTimestamp()
+                        });
                     } else {
-                        this.state.qi *= 0.7;
-                        this.addLog("Tribulation Failed! Your Qi was scattered.");
+                        this.state.qi *= 0.5;
                     }
                     this.saveGame();
                 }
@@ -269,11 +225,9 @@
                 document.getElementById('qi-bar').style.width = (this.state.qi / current.requirement * 100) + "%";
                 document.getElementById('realm').innerText = current.name;
                 document.getElementById('qi-needed').innerText = this.formatNum(current.requirement);
-                document.getElementById('rate').innerText = rate.toFixed(1);
+                document.getElementById('rate').innerText = (rate || 0).toFixed(1);
                 document.getElementById('age').innerText = Math.floor(this.state.age);
                 document.getElementById('maxAge').innerText = this.state.maxAge;
-                document.getElementById('karma-display').innerText = this.state.karma;
-                document.getElementById('root-grade').innerText = `Grade ${this.rootNames[this.state.rootGrade] || 'Unknown'}`;
                 document.getElementById('tech-level').innerText = `Lv ${this.state.upgrades.tech}`;
                 document.getElementById('player-name-display').innerText = this.state.playerName;
                 
@@ -281,12 +235,10 @@
                 const tCost = this.getUpgradeCost('tech');
                 document.getElementById('upg-spirit-cost').innerText = this.formatNum(sCost);
                 document.getElementById('upg-tech-cost').innerText = this.formatNum(tCost);
-                
                 document.getElementById('btn-upg-spirit').disabled = this.state.qi < sCost;
                 document.getElementById('btn-upg-tech').disabled = this.state.qi < tCost;
 
                 document.documentElement.style.setProperty('--realm-color', current.color);
-                
                 const btnB = document.getElementById('btn-breakthrough');
                 if (this.state.qi >= current.requirement && this.state.realmIndex < this.realms.length - 1) {
                     btnB.classList.remove('hidden');
@@ -295,33 +247,11 @@
                 }
             },
 
-            addLog(msg) {
-                const log = document.getElementById('log');
-                log.innerHTML = `<p>> [${new Date().toLocaleTimeString()}] ${msg}</p>` + log.innerHTML;
-                if (log.children.length > 30) log.lastChild.remove();
-            },
+            saveGame() { localStorage.setItem(VERSION, JSON.stringify(this.state)); },
 
-            saveGame() {
-                localStorage.setItem('cultivationSave', JSON.stringify(this.state));
-                localStorage.setItem('karma', this.state.karma);
-                localStorage.setItem('rootGrade', this.state.rootGrade);
-            },
-
-            resetGame() {
-                const cost = 100;
-                let msg = `Your life has reached its end. You have ${this.state.karma} Karma.\n`;
-                if (this.state.karma >= cost) {
-                    if (confirm(msg + `Spend ${cost} Karma to upgrade your Spirit Root for the next life?`)) {
-                        this.state.rootGrade++;
-                        this.state.karma -= cost;
-                    }
-                } else {
-                    alert(msg + "Gather more Karma in your next life to improve your Spirit Root.");
-                }
-                
-                localStorage.setItem('karma', this.state.karma);
-                localStorage.setItem('rootGrade', this.state.rootGrade);
-                localStorage.removeItem('cultivationSave');
+            resetLife() {
+                alert("Your life has ended. Reincarnating...");
+                this.state.qi = 0; this.state.age = 18; this.saveGame();
                 location.reload();
             },
 
@@ -330,12 +260,12 @@
                 onSnapshot(q, (sn) => {
                     let h = ""; sn.forEach(d => {
                         const data = d.data();
-                        h += `<li class="p-3 bg-white/5 rounded-xl border-l-4 border-purple-500 shadow-lg">
+                        h += `<li class="p-3 bg-white/5 rounded-xl border-l-4 border-purple-500">
                             <div class="text-white font-bold text-sm">${data.player}</div>
                             <div class="text-[10px] text-yellow-500 uppercase font-bold">${data.realm}</div>
                         </li>`;
                     });
-                    document.getElementById('leaderboard-list').innerHTML = h || "Searching for legends...";
+                    document.getElementById('leaderboard-list').innerHTML = h || "Awaiting legends...";
                 });
             },
 
@@ -347,12 +277,7 @@
                     sn.forEach(d => {
                         const data = d.data();
                         const div = document.createElement('div');
-                        if (data.isAnnouncement) {
-                            div.className = "announcement";
-                            div.innerText = data.text;
-                        } else {
-                            div.innerHTML = `<span class="text-purple-400 font-bold">${data.user}:</span> <span class="text-gray-300">${data.text}</span>`;
-                        }
+                        div.innerHTML = `<span class="text-purple-400 font-bold">${data.user}:</span> <span class="text-gray-300">${data.text}</span>`;
                         container.appendChild(div);
                     });
                 });
@@ -365,20 +290,30 @@
                     const text = i.value.trim();
                     if (!text) return;
                     i.value = "";
-                    try {
-                        await addDoc(collection(db, "messages"), { 
-                            user: this.state.playerName, 
-                            text: text, 
-                            createdAt: serverTimestamp() 
-                        });
-                    } catch(e) {}
+                    await addDoc(collection(db, "messages"), { user: this.state.playerName, text: text, createdAt: serverTimestamp() });
                 };
             }
         };
 
-        // EXPOSE TO GLOBAL SCOPE FOR HTML ONCLICK
-        window.game = gameInstance;
+        window.game = game;
         window.game.init();
+
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+        class Particle {
+            constructor() { this.reset(); }
+            reset() { this.x = canvas.width/2; this.y = canvas.height/2; this.size = Math.random()*2+1; this.speedX = (Math.random()-0.5)*5; this.speedY = (Math.random()-0.5)*5; this.life = 1; }
+            update() { this.x += this.speedX; this.y += this.speedY; this.life -= 0.01; if(this.life<=0) this.reset(); }
+            draw() { ctx.fillStyle = `rgba(167,139,250,${this.life})`; ctx.beginPath(); ctx.arc(this.x,this.y,this.size,0,Math.PI*2); ctx.fill(); }
+        }
+        let particles = Array.from({length:30}, () => new Particle());
+        function animate() { 
+            canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight;
+            ctx.clearRect(0,0,canvas.width,canvas.height); 
+            particles.forEach(p => { p.update(); p.draw(); }); 
+            requestAnimationFrame(animate); 
+        }
+        animate();
     </script>
 </body>
 </html>
