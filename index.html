@@ -133,10 +133,17 @@
 
         // --- GAME LOGIC ---
         window.game = {
-            state: {
-                qi: 0, realmIndex: 0, qiRate: 0, age: 18, maxAge: 100, 
-                upgrades: { spirit: 0 }, lastTick: Date.now()
-            },
+           window.game = {
+    state: {
+        playerName: localStorage.getItem('playerName') || "", // <-- ADD THIS
+        qi: 0, 
+        realmIndex: 0, 
+        qiRate: 0, 
+        age: 18, 
+        maxAge: 100, 
+        upgrades: { spirit: 0 }, 
+        lastTick: Date.now()
+    },
             realms: [
                 { name: "Mortal", requirement: 100 },
                 { name: "Qi Condensation", requirement: 1000 },
