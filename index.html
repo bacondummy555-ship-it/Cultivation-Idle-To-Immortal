@@ -11,13 +11,11 @@
         .qi-gradient { background: linear-gradient(90deg, var(--realm-color), #fff); box-shadow: 0 0 20px var(--realm-color); }
         .mystic-border { border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 0 20px rgba(0,0,0,0.5); background: rgba(15, 15, 20, 0.8); backdrop-filter: blur(10px); }
         
-        /* Animations */
         @keyframes shake { 0%, 100% { transform: translate(0,0); } 25% { transform: translate(-5px,5px); } 50% { transform: translate(5px,-5px); } }
         .strike { animation: shake 0.2s ease-in-out 3; background: white !important; }
         .float { animation: float 4s ease-in-out infinite; }
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
-        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: var(--realm-color); border-radius: 10px; }
     </style>
@@ -47,7 +45,7 @@
         </div>
     </div>
 
-    <div class="max-w-6xl mx-auto">
+    <div class="max-w-7xl mx-auto">
         <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
             <div>
                 <h1 class="text-4xl font-black uppercase tracking-widest text-white">Daoist <span id="p-name" class="text-purple-500">...</span></h1>
@@ -60,7 +58,7 @@
             </div>
         </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <div class="space-y-6">
                 <div class="mystic-border p-6 rounded-2xl">
                     <h2 class="text-sm font-bold uppercase text-gray-500 mb-4">Qi Reservoir</h2>
@@ -75,26 +73,25 @@
                 </div>
                 
                 <div class="grid grid-cols-1 gap-3">
-                    <button onclick="game.buyUpgrade('spirit')" class="mystic-border p-4 rounded-xl flex justify-between items-center group hover:bg-purple-900/20 transition">
+                    <button onclick="game.buyUpgrade('spirit')" class="mystic-border p-4 rounded-xl flex justify-between items-center hover:bg-purple-900/20 transition">
                         <div class="text-left">
                             <p class="font-bold text-purple-300">Gathering Array</p>
-                            <p class="text-[10px] text-gray-500">Increases base Qi absorption</p>
+                            <p class="text-[10px] text-gray-500">Increase Absorption</p>
                         </div>
                         <span id="cost-spirit" class="text-yellow-500 font-mono">10</span>
                     </button>
-                    <button onclick="game.buyUpgrade('tech')" class="mystic-border p-4 rounded-xl flex justify-between items-center group hover:bg-orange-900/20 transition">
+                    <button onclick="game.buyUpgrade('tech')" class="mystic-border p-4 rounded-xl flex justify-between items-center hover:bg-orange-900/20 transition">
                         <div class="text-left">
                             <p class="font-bold text-orange-400">Mental Method</p>
-                            <p class="text-[10px] text-gray-500">Multiplies all gains</p>
+                            <p class="text-[10px] text-gray-500">Multiply Gains</p>
                         </div>
                         <span id="cost-tech" class="text-yellow-500 font-mono">50</span>
                     </button>
                 </div>
             </div>
 
-            <div class="space-y-6">
+            <div class="lg:col-span-2 space-y-6">
                 <div class="mystic-border h-80 rounded-3xl flex flex-col items-center justify-center relative overflow-hidden bg-gradient-to-b from-transparent to-purple-950/20">
-                    <div id="particle-field" class="absolute inset-0 pointer-events-none opacity-30"></div>
                     <div class="float relative z-10">
                         <button onclick="game.manualMeditate()" class="w-40 h-40 rounded-full border-4 border-purple-500/30 flex items-center justify-center bg-black/40 hover:scale-105 active:scale-95 transition-all shadow-[0_0_50px_var(--realm-color)]">
                             <span class="font-black tracking-tighter text-xl">MEDITATE</span>
@@ -103,19 +100,27 @@
                     <button id="break-btn" onclick="game.breakthrough()" class="hidden absolute bottom-6 w-3/4 bg-yellow-500 text-black font-black py-3 rounded-lg animate-pulse shadow-lg">FACING TRIBULATION</button>
                 </div>
 
-                <div class="mystic-border p-4 rounded-2xl bg-black/20">
-                    <h3 class="text-[10px] font-bold text-gray-600 uppercase mb-2">Daoist Records</h3>
-                    <div id="log" class="h-32 overflow-y-auto text-[11px] space-y-1 font-mono text-gray-400"></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="mystic-border p-4 rounded-2xl bg-black/20">
+                        <h3 class="text-[10px] font-bold text-gray-600 uppercase mb-2">Daoist Records</h3>
+                        <div id="log" class="h-48 overflow-y-auto text-[11px] space-y-1 font-mono text-gray-400"></div>
+                    </div>
+                    <div class="mystic-border p-4 rounded-2xl flex flex-col h-64">
+                        <h2 class="text-[10px] font-bold uppercase text-gray-600 mb-2">World Transmission</h2>
+                        <div id="chat" class="flex-grow overflow-y-auto space-y-2 mb-2 text-xs"></div>
+                        <form id="chat-form" class="flex gap-2">
+                            <input id="chat-input" type="text" placeholder="..." class="bg-black/50 border border-white/10 rounded p-1 flex-grow outline-none text-xs">
+                            <button class="bg-purple-600 px-2 rounded font-bold text-[10px]">SEND</button>
+                        </form>
+                    </div>
                 </div>
             </div>
 
-            <div class="mystic-border p-6 rounded-2xl flex flex-col h-[550px]">
-                <h2 class="text-sm font-bold uppercase text-gray-500 mb-4">World Transmission</h2>
-                <div id="chat" class="flex-grow overflow-y-auto space-y-3 mb-4 text-sm"></div>
-                <form id="chat-form" class="flex gap-2">
-                    <input id="chat-input" type="text" placeholder="Speak..." class="bg-black/50 border border-white/10 rounded-lg p-2 flex-grow outline-none focus:border-purple-500">
-                    <button class="bg-purple-600 px-4 rounded-lg font-bold">SEND</button>
-                </form>
+            <div class="mystic-border p-6 rounded-2xl">
+                <h2 class="text-sm font-bold uppercase text-purple-400 mb-4 border-b border-purple-900/50 pb-2">Immortal Rankings</h2>
+                <ul id="leaderboard-list" class="space-y-3">
+                    <li class="text-center text-gray-600 text-xs py-4 italic">Fetching Daoists...</li>
+                </ul>
             </div>
         </div>
     </div>
@@ -165,21 +170,19 @@
                 if (!this.state.name) this.state.name = prompt("Enter your Daoist Name:") || "Unknown";
                 
                 this.setupNetwork();
+                this.listenToLeaderboard();
                 setInterval(() => this.tick(), 100);
-                setInterval(() => this.randomEvent(), 45000); // Event every 45s
+                setInterval(() => this.randomEvent(), 45000);
                 this.render();
             },
 
             tick() {
                 const dt = (Date.now() - this.state.lastTick) / 1000;
                 this.state.lastTick = Date.now();
-
                 const rate = (1 + this.state.upgrades.spirit) * (1 + this.state.upgrades.tech * 2) * Math.pow(1.5, this.state.realmIdx) * this.state.rootMult;
                 const currentReq = this.realms[this.state.realmIdx].req;
-
                 this.state.qi = Math.min(currentReq, this.state.qi + (rate * dt));
-                this.state.age += dt / 60; // 1 year per minute
-
+                this.state.age += dt / 60;
                 if (this.state.age >= this.state.maxAge) this.die();
                 this.render(rate);
             },
@@ -211,7 +214,7 @@
                     await addDoc(collection(db, "highscores"), { player: this.state.name, realm: this.realms[this.state.realmIdx].name, level: this.state.realmIdx, createdAt: serverTimestamp() });
                 } else {
                     this.state.qi *= 0.5;
-                    this.addLog(`<span class="text-red-500">⚡ Lightning Strike! Qi scattered by 50%.</span>`);
+                    this.addLog(`<span class="text-red-500">⚡ Lightning Strike! Qi scattered.</span>`);
                 }
                 localStorage.setItem(SAVE_KEY, JSON.stringify(this.state));
             },
@@ -219,8 +222,8 @@
             randomEvent() {
                 const modal = document.getElementById('event-modal');
                 const events = [
-                    { t: "Ancient Ruins", d: "You find a mysterious jade slip. Study it?", o1: "Study (Gain Qi)", o2: "Ignore (Gain Karma)", r1: () => this.state.qi += 500, r2: () => this.state.karma += 50 },
-                    { t: "Encountering a Rival", d: "A rival Daoist challenges your path!", o1: "Fight (Risk 10% Qi)", o2: "Flee (Lose 5 Years Lifespan)", r1: () => Math.random() > 0.5 ? this.state.qi *= 2 : this.state.qi *= 0.1, r2: () => this.state.age += 5 }
+                    { t: "Ancient Ruins", d: "Study jade slip?", o1: "Study (Qi)", o2: "Ignore (Karma)", r1: () => this.state.qi += 500, r2: () => this.state.karma += 50 },
+                    { t: "Rival Daoist", d: "A challenge!", o1: "Fight (Qi Risk)", o2: "Flee (Age)", r1: () => Math.random() > 0.5 ? this.state.qi *= 2 : this.state.qi *= 0.1, r2: () => this.state.age += 5 }
                 ];
                 const e = events[Math.floor(Math.random() * events.length)];
                 document.getElementById('event-title').innerText = e.t;
@@ -228,7 +231,6 @@
                 document.getElementById('event-opt1').innerText = e.o1;
                 document.getElementById('event-opt2').innerText = e.o2;
                 modal.style.display = 'flex';
-                
                 document.getElementById('event-opt1').onclick = () => { e.r1(); modal.style.display = 'none'; };
                 document.getElementById('event-opt2').onclick = () => { e.r2(); modal.style.display = 'none'; };
             },
@@ -237,7 +239,7 @@
                 const gain = this.state.realmIdx * 20;
                 this.state.karma += gain;
                 document.getElementById('reincarnation-screen').style.display = 'flex';
-                document.getElementById('death-msg').innerText = `Daoist ${this.state.name} has perished at the ${this.realms[this.state.realmIdx].name} realm.`;
+                document.getElementById('death-msg').innerText = `${this.state.name} perished as ${this.realms[this.state.realmIdx].name}.`;
                 document.getElementById('karma-gain').innerText = gain;
             },
 
@@ -245,13 +247,9 @@
                 if (this.state.karma < cost) return alert("Not enough Karma!");
                 this.state.karma -= cost;
                 this.state.rootMult = mult;
-                this.state.age = 18;
-                this.state.maxAge = 100;
-                this.state.realmIdx = 0;
-                this.state.qi = 0;
+                this.state.age = 18; this.state.maxAge = 100; this.state.realmIdx = 0; this.state.qi = 0;
                 this.state.upgrades = { spirit: 0, tech: 0 };
                 document.getElementById('reincarnation-screen').style.display = 'none';
-                this.addLog("Reincarnated into a new body...");
                 localStorage.setItem(SAVE_KEY, JSON.stringify(this.state));
             },
 
@@ -267,12 +265,10 @@
                 document.getElementById('root').innerText = this.state.rootMult + "x";
                 document.getElementById('rate-val').innerText = Math.floor(rate).toLocaleString();
                 document.getElementById('success-val').innerText = (r.chance * 100).toFixed(0) + "%";
-                
-                document.getElementById('cost-spirit').innerText = Math.floor(10 * Math.pow(1.8, this.state.upgrades.spirit)).toLocaleString();
-                document.getElementById('cost-tech').innerText = Math.floor(100 * Math.pow(1.8, this.state.upgrades.tech)).toLocaleString();
-
                 document.documentElement.style.setProperty('--realm-color', r.color);
                 document.getElementById('break-btn').style.display = (this.state.qi >= r.req) ? 'block' : 'none';
+                document.getElementById('cost-spirit').innerText = Math.floor(10 * Math.pow(1.8, this.state.upgrades.spirit)).toLocaleString();
+                document.getElementById('cost-tech').innerText = Math.floor(100 * Math.pow(1.8, this.state.upgrades.tech)).toLocaleString();
             },
 
             addLog(msg) {
@@ -280,11 +276,25 @@
                 log.innerHTML = `<div class="border-l-2 border-purple-500 pl-2 mb-1">${msg}</div>` + log.innerHTML;
             },
 
+            listenToLeaderboard() {
+                const q = query(collection(db, "highscores"), orderBy("level", "desc"), limit(10));
+                onSnapshot(q, (sn) => {
+                    const list = document.getElementById('leaderboard-list');
+                    list.innerHTML = "";
+                    sn.forEach(d => {
+                        const data = d.data();
+                        list.innerHTML += `<li class="p-2 bg-white/5 rounded border-l-2 border-purple-500">
+                            <div class="text-[11px] font-bold">${data.player}</div>
+                            <div class="text-[9px] text-yellow-500 uppercase">${data.realm}</div>
+                        </li>`;
+                    });
+                });
+            },
+
             setupNetwork() {
                 const qMsg = query(collection(db, "messages"), orderBy("createdAt", "desc"), limit(15));
                 onSnapshot(qMsg, (sn) => {
-                    const chat = document.getElementById('chat');
-                    chat.innerHTML = "";
+                    const chat = document.getElementById('chat'); chat.innerHTML = "";
                     sn.forEach(d => {
                         const data = d.data();
                         chat.innerHTML += `<div><b class="text-purple-400">${data.user}</b>: <span class="text-gray-400">${data.text}</span></div>`;
