@@ -10,7 +10,8 @@
         body { background-color: #050507; color: #e2e8f0; font-family: 'Georgia', serif; overflow-x: hidden; }
         
         /* Modular Profile Icon Component */
-        .profile-container { position: relative; width: 100px; height: 100px; }
+        .profile-container { position: relative; width: 100px; height: 100px; transition: transform 0.3s ease; }
+        .profile-container:hover { transform: scale(1.05); }
         
         .profile-frame { 
             position: relative; 
@@ -38,18 +39,24 @@
         @keyframes flash { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(2); } }
 
         /* Draggable Admin Style */
-        #admin-panel { position: fixed; z-index: 100; cursor: default; }
+        #admin-panel { position: fixed; z-index: 100; cursor: default; box-shadow: 0 0 30px rgba(220, 38, 38, 0.3); }
         #admin-header { cursor: move; }
         
-        .mystic-border { border: 1px solid rgba(255,255,255,0.1); background: rgba(15, 15, 20, 0.9); backdrop-filter: blur(12px); }
-        .qi-gradient { background: linear-gradient(90deg, var(--realm-color), #fff); box-shadow: 0 0 15px var(--realm-color); }
+        .mystic-border { border: 1px solid rgba(255,255,255,0.1); background: rgba(15, 15, 20, 0.9); backdrop-filter: blur(12px); transition: border 0.3s; }
+        .mystic-border:hover { border-color: var(--realm-color); }
+        .qi-gradient { background: linear-gradient(90deg, var(--realm-color), #fff); box-shadow: 0 0 15px var(--realm-color); transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        /* Chat Specific Styling */
+        .chat-msg { animation: slideIn 0.3s ease-out; border-bottom: 1px solid rgba(255,255,255,0.03); }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: var(--realm-color); border-radius: 10px; }
     </style>
 </head>
-<body class="p-6">
+<body class="p-4 md:p-8">
 
-    <div id="game-ui" class="max-w-6xl mx-auto">
-        <header class="flex flex-col md:flex-row justify-between items-center mb-12 p-6 bg-white/5 rounded-3xl border border-white/10">
-            
+    <div id="game-ui" class="max-w-7xl mx-auto">
+        <header class="flex flex-col md:flex-row justify-between items-center mb-10 p-6 mystic-border rounded-3xl">
             <div class="flex items-center gap-6">
                 <div class="profile-container">
                     <div id="profile-aura-effect" class="profile-aura"></div>
@@ -59,7 +66,7 @@
                     <div id="profile-frame-el" class="profile-frame flex items-center justify-center overflow-hidden">
                         <span id="sect-emblem" class="text-4xl">☯️</span>
                     </div>
-                    <div id="sect-rank" class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-purple-900 border border-purple-400 px-3 py-0.5 rounded-full text-[9px] font-bold z-30 whitespace-nowrap uppercase">
+                    <div id="sect-rank" class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-purple-900 border border-purple-400 px-3 py-0.5 rounded-full text-[9px] font-bold z-30 whitespace-nowrap uppercase tracking-tighter">
                         Outer Disciple
                     </div>
                 </div>
@@ -73,65 +80,104 @@
                         <span id="p-realm" class="text-yellow-400 font-bold tracking-[0.2em] uppercase text-xs">Mortal</span>
                         <div class="flex gap-4 text-[10px] font-mono text-gray-500 mt-1">
                             <span id="p-uid">UID: ---</span>
-                            <span id="dao-path" class="text-blue-400">PATH: BALANCE</span>
+                            <span id="dao-path" class="text-blue-400 font-bold">PATH: BALANCE</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="flex gap-10">
+            <div class="flex gap-10 mt-6 md:mt-0">
                 <div class="text-center">
-                    <p class="text-[10px] text-gray-500 uppercase font-bold">Qi Capacity</p>
-                    <p id="qi-val" class="text-2xl font-mono font-bold">0</p>
+                    <p class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Qi Level</p>
+                    <p id="qi-val" class="text-2xl font-mono font-bold text-white">0</p>
                 </div>
                 <div class="text-center">
-                    <p class="text-[10px] text-gray-500 uppercase font-bold">Lifespan</p>
-                    <p class="text-2xl font-mono"><span id="age">18</span>/<span id="maxAge">100</span></p>
+                    <p class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Years of Life</p>
+                    <p class="text-2xl font-mono text-white"><span id="age">18</span>/<span id="maxAge">100</span></p>
                 </div>
             </div>
         </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            
+            <div class="space-y-6 lg:col-span-1">
+                <div class="mystic-border p-6 rounded-2xl">
+                    <h3 class="text-xs font-bold text-gray-500 uppercase mb-4 tracking-widest">Cultivation Progress</h3>
+                    <div class="w-full bg-black h-3 rounded-full overflow-hidden mb-3 border border-white/5">
+                        <div id="qi-bar" class="qi-gradient h-full w-0"></div>
+                    </div>
+                    <p class="text-[10px] text-gray-400 font-mono" id="qi-percent">0% to next Realm</p>
+                </div>
+
+                <div class="mystic-border p-6 rounded-2xl">
+                    <h3 class="text-xs font-bold text-purple-400 uppercase mb-4 tracking-widest">System Logs</h3>
+                    <div id="log" class="h-64 overflow-y-auto font-mono text-[10px] text-gray-500 space-y-2"></div>
+                </div>
+            </div>
+
             <div class="lg:col-span-2 space-y-6">
-                <div class="mystic-border h-96 rounded-3xl flex flex-col items-center justify-center relative overflow-hidden group">
-                    <div class="absolute inset-0 bg-gradient-to-b from-transparent to-purple-900/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <button onclick="game.manualMeditate()" class="relative z-10 w-48 h-48 rounded-full border-2 border-white/10 flex items-center justify-center bg-black/40 hover:scale-105 transition-all active:scale-95">
+                <div class="mystic-border h-[500px] rounded-3xl flex flex-col items-center justify-center relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-gradient-to-b from-transparent via-purple-900/5 to-purple-900/20"></div>
+                    
+                    <button onclick="game.manualMeditate()" class="relative z-10 w-56 h-56 rounded-full border border-white/10 flex items-center justify-center bg-black/40 hover:bg-black/20 hover:scale-105 transition-all active:scale-95 shadow-[0_0_60px_-15px_rgba(0,0,0,1)]">
                         <div class="text-center">
-                            <p class="text-purple-400 font-black text-xl">MEDITATE</p>
-                            <p class="text-[10px] text-gray-500">GATHER QI</p>
+                            <div id="meditate-pulse" class="absolute inset-0 rounded-full border-2 border-purple-500/20 animate-ping"></div>
+                            <p class="text-purple-400 font-black text-2xl tracking-tighter">MEDITATE</p>
+                            <p class="text-[10px] text-gray-500 uppercase mt-1">Absorb World Essence</p>
                         </div>
                     </button>
                     
-                    <button id="break-btn" onclick="game.breakthrough()" class="hidden absolute bottom-10 px-12 py-4 bg-yellow-500 text-black font-black rounded-full shadow-[0_0_30px_#eab308] animate-bounce">
-                        ATTEMPT BREAKTHROUGH
+                    <button id="break-btn" onclick="game.breakthrough()" class="hidden absolute bottom-12 px-16 py-4 bg-yellow-500 text-black font-black rounded-full shadow-[0_0_40px_rgba(234,179,8,0.4)] animate-bounce hover:scale-105 transition-transform">
+                        CONFRONT HEAVENLY TRIBULATION
                     </button>
                 </div>
-                <div id="log" class="mystic-border p-6 rounded-2xl h-40 overflow-y-auto font-mono text-xs text-gray-400 space-y-1"></div>
             </div>
 
-            <div class="space-y-6">
-                <div class="mystic-border p-6 rounded-2xl">
-                    <h3 class="text-xs font-bold text-gray-500 uppercase mb-4">Progression</h3>
-                    <div class="w-full bg-black h-2 rounded-full overflow-hidden mb-2">
-                        <div id="qi-bar" class="qi-gradient h-full w-0 transition-all"></div>
+            <div class="lg:col-span-1 flex flex-col mystic-border rounded-2xl overflow-hidden h-[500px]">
+                <div class="bg-white/5 p-4 border-b border-white/10 flex justify-between items-center">
+                    <h3 class="text-xs font-bold text-blue-400 uppercase tracking-widest">Global Dao Chat</h3>
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                </div>
+                <div id="chat-box" class="flex-grow p-4 overflow-y-auto space-y-3 font-sans text-xs">
                     </div>
-                    <p class="text-[10px] text-right text-gray-500" id="qi-percent">0% to next Realm</p>
+                <div class="p-4 bg-black/40 border-t border-white/10">
+                    <form id="chat-form" onsubmit="game.sendChat(event)" class="flex gap-2">
+                        <input id="chat-input" type="text" placeholder="Speak your mind..." class="flex-grow bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs outline-none focus:border-purple-500 transition-colors">
+                        <button type="submit" class="bg-purple-600 px-3 py-2 rounded-lg font-bold text-[10px] hover:bg-purple-500 transition-colors">SEND</button>
+                    </form>
                 </div>
             </div>
+
         </div>
 
-        <div id="admin-panel" class="hidden bg-red-950/90 border border-red-500 w-64 rounded-xl shadow-2xl overflow-hidden" style="top: 20px; right: 20px;">
-            <div id="admin-header" class="bg-red-600 p-2 text-[10px] font-black uppercase text-center text-white">Heavenly Overseer (Drag Me)</div>
+        <div id="admin-panel" class="hidden bg-red-950/95 border border-red-500 w-64 rounded-xl shadow-2xl overflow-hidden" style="top: 20px; right: 20px;">
+            <div id="admin-header" class="bg-red-600 p-2 text-[10px] font-black uppercase text-center text-white select-none">Heavenly Overseer (Drag)</div>
             <div class="p-4 space-y-2">
-                <button onclick="game.state.qi += 10000; game.render();" class="w-full py-2 bg-white/10 hover:bg-white/20 text-[10px] font-bold rounded">INSTANT QI (10K)</button>
-                <button onclick="game.state.karma += 5000" class="w-full py-2 bg-green-600 text-[10px] font-bold rounded">ADD GOOD KARMA</button>
-                <button onclick="game.state.karma -= 5000" class="w-full py-2 bg-red-600 text-[10px] font-bold rounded">ADD EVIL KARMA</button>
+                <button onclick="game.state.qi += 50000; game.render();" class="w-full py-2 bg-white/10 hover:bg-white/20 text-[10px] font-bold rounded border border-white/5 transition-all">GIFT QI (+50K)</button>
+                <button onclick="game.state.karma += 1000" class="w-full py-2 bg-blue-600/40 hover:bg-blue-600 text-[10px] font-bold rounded transition-all">INCREASE KARMA</button>
+                <button onclick="game.state.karma -= 1000" class="w-full py-2 bg-red-600/40 hover:bg-red-600 text-[10px] font-bold rounded transition-all">DECREASE KARMA</button>
+                <div class="text-[8px] text-red-400 text-center mt-2 opacity-50 font-mono">ADMIN ACCESS GRANTED</div>
             </div>
         </div>
     </div>
 
     <script type="module">
-        // CONFIG OBJECTS (Data-Driven)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // CONFIG (Replace with your actual Firebase config if different)
+        const firebaseConfig = {
+            apiKey: "AIzaSyD7N-ZUGKm9hasgM0DD08scouydEEuiLvU",
+            authDomain: "path-to-immortality-78ad8.firebaseapp.com",
+            projectId: "path-to-immortality-78ad8",
+            storageBucket: "path-to-immortality-78ad8.firebasestorage.app",
+            messagingSenderId: "653760996266",
+            appId: "1:653760996266:web:59c8dc7158cba0722e01d3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
         const UI_ENUMS = {
             KARMA_TYPES: {
                 EVIL: { label: 'DEMONIC', style: 'bg-red-900/50 text-red-400 border-red-500' },
@@ -146,24 +192,64 @@
         };
 
         const game = {
-            currentUser: { uid: "GUEST_777", displayName: "Daoist Wanderer" },
+            currentUser: { uid: "GUEST_" + Math.floor(Math.random()*999), displayName: "Daoist Wanderer" },
             state: {
                 name: "Daoist Wanderer", qi: 0, realmIdx: 0, age: 18, maxAge: 100,
                 karma: 0, technique: "dao", lastTick: Date.now()
             },
             realms: [
                 { name: "Mortal Root", req: 100, color: "#94a3b8", chance: 0.9 },
-                { name: "Qi Gathering", req: 500, color: "#4ade80", chance: 0.7 },
-                { name: "Foundation", req: 2500, color: "#3b82f6", chance: 0.5 },
-                { name: "Core Formation", req: 10000, color: "#a855f7", chance: 0.3 },
-                { name: "Nascent Soul", req: 50000, color: "#f43f5e", chance: 0.15 }
+                { name: "Qi Gathering", req: 1000, color: "#4ade80", chance: 0.7 },
+                { name: "Foundation", req: 5000, color: "#3b82f6", chance: 0.5 },
+                { name: "Core Formation", req: 20000, color: "#a855f7", chance: 0.3 },
+                { name: "Nascent Soul", req: 100000, color: "#f43f5e", chance: 0.15 }
             ],
 
             init() {
                 this.setupDraggable();
+                this.setupChat();
                 this.startGame();
-                // Check for Admin
-                if(this.currentUser.uid === "GUEST_777") document.getElementById('admin-panel').classList.remove('hidden');
+                document.getElementById('admin-panel').classList.remove('hidden');
+            },
+
+            setupChat() {
+                const chatBox = document.getElementById('chat-box');
+                const q = query(collection(db, "global_chat"), orderBy("timestamp", "desc"), limit(30));
+                
+                onSnapshot(q, (snapshot) => {
+                    chatBox.innerHTML = "";
+                    const msgs = [];
+                    snapshot.forEach(doc => msgs.push(doc.data()));
+                    msgs.reverse().forEach(data => {
+                        const div = document.createElement('div');
+                        div.className = "chat-msg p-2 hover:bg-white/5 transition-colors rounded";
+                        div.innerHTML = `
+                            <div class="flex justify-between mb-1 opacity-50 text-[9px] uppercase font-bold">
+                                <span>${data.user || 'Anonymous'}</span>
+                                <span>${data.realm || 'Mortal'}</span>
+                            </div>
+                            <p class="text-gray-200 leading-relaxed">${data.text}</p>
+                        `;
+                        chatBox.appendChild(div);
+                    });
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                });
+            },
+
+            async sendChat(e) {
+                e.preventDefault();
+                const input = document.getElementById('chat-input');
+                const text = input.value.trim();
+                if (!text) return;
+                
+                input.value = "";
+                await addDoc(collection(db, "global_chat"), {
+                    text: text,
+                    user: this.state.name,
+                    realm: this.realms[this.state.realmIdx].name,
+                    timestamp: serverTimestamp(),
+                    uid: this.currentUser.uid
+                });
             },
 
             startGame() {
@@ -173,7 +259,7 @@
             tick() {
                 const dt = (Date.now() - this.state.lastTick) / 1000;
                 this.state.lastTick = Date.now();
-                const rate = Math.pow(2, this.state.realmIdx) * 5;
+                const rate = Math.pow(2.5, this.state.realmIdx) * 2;
                 const req = this.realms[this.state.realmIdx].req;
                 
                 if (this.state.qi < req) {
@@ -184,9 +270,8 @@
 
             render() {
                 const r = this.realms[this.state.realmIdx];
-                const progress = (this.state.qi / r.req) * 100;
+                const progress = Math.min(100, (this.state.qi / r.req) * 100);
 
-                // Bind Profile Data
                 document.getElementById('p-name').innerText = this.state.name;
                 document.getElementById('p-realm').innerText = r.name;
                 document.getElementById('p-uid').innerText = `UID: ${this.currentUser.uid}`;
@@ -195,7 +280,6 @@
                 document.getElementById('qi-percent').innerText = `${Math.floor(progress)}% to next Realm`;
                 document.documentElement.style.setProperty('--realm-color', r.color);
 
-                // Sect & Karma Binding
                 const sect = UI_ENUMS.SECTS.filter(s => this.state.realmIdx >= s.min).pop();
                 document.getElementById('sect-emblem').innerText = sect.emblem;
                 document.getElementById('sect-rank').innerText = sect.rank;
@@ -211,18 +295,20 @@
 
             breakthrough() {
                 this.triggerLightning(true);
+                this.addLog(`<span class="text-yellow-500">The Heavens roar as you attempt to break your limits...</span>`);
+                
                 setTimeout(() => {
                     const r = this.realms[this.state.realmIdx];
                     if (Math.random() <= r.chance) {
                         this.state.realmIdx++;
                         this.state.qi = 0;
-                        this.addLog(`<span class="text-green-400">SUCCESS! You have reached ${this.realms[this.state.realmIdx].name}</span>`);
+                        this.addLog(`<span class="text-green-400 font-bold">SUCCESS! You have ascended to ${this.realms[this.state.realmIdx].name}.</span>`);
                     } else {
-                        this.state.qi *= 0.4;
-                        this.addLog(`<span class="text-red-500">FAILURE! The Tribulation lightning has damaged your cultivation.</span>`);
+                        this.state.qi *= 0.3;
+                        this.addLog(`<span class="text-red-500 font-bold">FAILURE! The tribulation lightning scorches your soul.</span>`);
                     }
                     this.triggerLightning(false);
-                }, 1500);
+                }, 1800);
             },
 
             triggerLightning(active) {
@@ -232,10 +318,10 @@
                     canvas.classList.add('lightning-active');
                     this.lightningInterval = setInterval(() => {
                         let pts = "M 50 0 ";
-                        for(let i=1; i<5; i++) pts += `L ${40 + Math.random()*20} ${i*20} `;
+                        for(let i=1; i<6; i++) pts += `L ${30 + Math.random()*40} ${i*18} `;
                         pts += "L 50 100";
                         path.setAttribute('d', pts);
-                    }, 50);
+                    }, 60);
                 } else {
                     canvas.classList.remove('lightning-active');
                     clearInterval(this.lightningInterval);
@@ -243,13 +329,14 @@
             },
 
             manualMeditate() {
-                this.state.qi += (this.state.realmIdx + 1) * 10;
+                this.state.qi += (this.state.realmIdx + 1) * 15;
                 this.render();
             },
 
             addLog(msg) {
                 const l = document.getElementById('log');
-                l.innerHTML = `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>` + l.innerHTML;
+                const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                l.innerHTML = `<div class="chat-msg"><b>[${time}]</b> ${msg}</div>` + l.innerHTML;
             },
 
             setupDraggable() {
