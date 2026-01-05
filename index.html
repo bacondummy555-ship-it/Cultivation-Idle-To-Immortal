@@ -136,16 +136,27 @@
                 </div>
             </div>
 
-            <div class="mystic-border p-6 rounded-2xl">
-                <h2 class="text-sm font-bold uppercase text-purple-400 mb-4 border-b border-purple-900/50 pb-2 text-center">Leaderboard</h2>
-                <ul id="leaderboard-list" class="space-y-3"></ul>
+            <div class="space-y-6">
+                <div class="mystic-border p-4 rounded-2xl border-orange-500/30">
+                    <h2 class="text-[10px] font-bold uppercase text-orange-400 mb-2 text-center">Spirit Vein Control</h2>
+                    <div id="domain-info" class="text-center mb-3">
+                        <p class="text-xs text-gray-400">Current Lord:</p>
+                        <p id="domain-lord" class="font-bold text-white">None</p>
+                        <p class="text-[10px] text-green-500">+50% Qi Generation</p>
+                    </div>
+                    <button onclick="game.claimDomain()" class="w-full py-2 bg-orange-600/20 border border-orange-500 text-orange-500 text-[10px] font-bold rounded hover:bg-orange-600 hover:text-white transition">CLAIM DOMAIN</button>
+                </div>
+
+                <div class="mystic-border p-6 rounded-2xl">
+                    <h2 class="text-sm font-bold uppercase text-purple-400 mb-4 border-b border-purple-900/50 pb-2 text-center">Leaderboard</h2>
+                    <ul id="leaderboard-list" class="space-y-3"></ul>
+                </div>
             </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        // ADDED doc and setDoc to handle unique entry updates
         import { getFirestore, collection, addDoc, doc, setDoc, query, orderBy, limit, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -166,8 +177,10 @@
                 name: "", qi: 0, realmIdx: 0, age: 18, maxAge: 100,
                 upgrades: { spirit: 0, tech: 0 },
                 karma: 0, rootMult: 1, lastTick: Date.now(),
-                technique: "dao"
+                technique: "dao",
+                hasDomain: false
             },
+            domainLord: "None",
             realms: [
                 "Mortal Body", "Refined Body", "Tempered Flesh", "Bone Forging", "Blood Circulation", "Muscle Cleansing", "Meridian Awakening", "Qi Sense", "Qi Initiation", "Qi Condensation", "Qi Gathering", "Qi Foundation", "Qi Stabilization",
                 "Foundation Establishment", "Foundation Perfection", "Spirit Root Awakening", "Spirit Root Tempering", "Spirit Root Harmonization", "Golden Core (Early)", "Golden Core (Middle)", "Golden Core (Late)", "Golden Core (Perfected)",
@@ -191,6 +204,7 @@
                 
                 this.setupNetwork();
                 this.listenToLeaderboard();
+                this.listenToDomain();
                 if (!this.state.techniqueChosen) {
                    document.getElementById('technique-screen').style.display = 'flex';
                 }
@@ -215,7 +229,10 @@
                 if(this.state.technique === 'turtle') techRate = 0.7;
                 if(this.state.technique === 'phoenix') techRate = 2.0;
 
-                const rate = (1 + this.state.upgrades.spirit) * (1 + this.state.upgrades.tech * 2) * Math.pow(1.5, this.state.realmIdx) * this.state.rootMult * techRate;
+                // Domain Bonus
+                const domainBonus = (this.domainLord === this.state.name) ? 1.5 : 1.0;
+
+                const rate = (1 + this.state.upgrades.spirit) * (1 + this.state.upgrades.tech * 2) * Math.pow(1.5, this.state.realmIdx) * this.state.rootMult * techRate * domainBonus;
                 const currentReq = this.realms[this.state.realmIdx].req;
                 
                 this.state.qi = Math.min(currentReq, this.state.qi + (rate * dt));
@@ -229,7 +246,8 @@
                 let techRate = 1;
                 if(this.state.technique === 'turtle') techRate = 0.7;
                 if(this.state.technique === 'phoenix') techRate = 2.0;
-                const power = (10 + (this.state.realmIdx * 50)) * this.state.rootMult * techRate;
+                const domainBonus = (this.domainLord === this.state.name) ? 1.5 : 1.0;
+                const power = (10 + (this.state.realmIdx * 50)) * this.state.rootMult * techRate * domainBonus;
                 this.state.qi = Math.min(this.realms[this.state.realmIdx].req, this.state.qi + power);
             },
 
@@ -256,7 +274,6 @@
                     this.state.maxAge += 50;
                     this.addLog(`<span class="text-yellow-400">★ Breakthrough: ${this.realms[this.state.realmIdx].name}</span>`);
                     
-                    // FIXED: Uses setDoc with name as ID to update existing entry instead of adding new ones
                     await setDoc(doc(db, "highscores", this.state.name), { 
                         player: this.state.name, 
                         realm: this.realms[this.state.realmIdx].name, 
@@ -268,6 +285,23 @@
                     this.addLog(`<span class="text-red-500">⚡ Tribulation Failure! Qi scattered.</span>`);
                 }
                 localStorage.setItem(SAVE_KEY, JSON.stringify(this.state));
+            },
+
+            async claimDomain() {
+                await setDoc(doc(db, "world", "spirit_vein"), {
+                    lord: this.state.name,
+                    at: serverTimestamp()
+                });
+                this.addLog(`<span class="text-orange-400">⚔ You have claimed the Spirit Vein!</span>`);
+            },
+
+            listenToDomain() {
+                onSnapshot(doc(db, "world", "spirit_vein"), (d) => {
+                    if(d.exists()) {
+                        this.domainLord = d.data().lord;
+                        document.getElementById('domain-lord').innerText = this.domainLord;
+                    }
+                });
             },
 
             randomEvent() {
