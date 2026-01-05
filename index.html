@@ -32,27 +32,49 @@
 </head>
 <body class="p-4 transition-colors duration-1000">
 
+    <div id="loading-screen" class="fixed inset-0 bg-black z-[100] flex flex-col items-center justify-center transition-opacity duration-1000">
+        <div class="text-3xl font-black tracking-[0.2em] text-white mb-4 animate-pulse">PATH TO IMMORTALITY</div>
+        <div class="w-64 h-1 bg-gray-900 rounded-full overflow-hidden">
+            <div id="loading-bar" class="h-full bg-purple-600 w-0 transition-all duration-500"></div>
+        </div>
+        <div class="text-[10px] text-gray-500 mt-2 uppercase tracking-widest">Touching the Heavens...</div>
+    </div>
+
+    <div id="auth-screen" class="fixed inset-0 bg-black/90 z-[80] hidden flex-col items-center justify-center p-6 backdrop-blur-xl">
+        <div class="mystic-border p-8 rounded-3xl w-full max-w-md border-t-4 border-purple-500">
+            <h2 id="auth-title" class="text-3xl font-bold text-white mb-6 text-center tracking-tighter">Enter the Dao</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] text-gray-500 uppercase font-bold ml-2">Spirit Email</label>
+                    <input id="auth-email" type="email" class="w-full bg-black/50 border border-white/10 rounded-xl p-3 outline-none focus:border-purple-500 transition-all">
+                </div>
+                <div>
+                    <label class="text-[10px] text-gray-500 uppercase font-bold ml-2">Secret Mantra (Password)</label>
+                    <input id="auth-pass" type="password" class="w-full bg-black/50 border border-white/10 rounded-xl p-3 outline-none focus:border-purple-500 transition-all">
+                </div>
+                <button onclick="game.handleAuth()" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-900/20 transition-all mt-4">COMMENCE JOURNEY</button>
+                <div class="text-center mt-4">
+                    <button id="auth-toggle" onclick="game.toggleAuthMode()" class="text-xs text-gray-400 hover:text-purple-400 underline italic">New seeker? Register your soul.</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="technique-screen" class="fixed inset-0 bg-black/95 z-[60] hidden flex-col items-center justify-center p-6 text-center backdrop-blur-md">
         <h2 class="text-4xl font-bold text-purple-500 mb-2 tracking-tighter">Choose Your Technique</h2>
         <p class="text-gray-400 mb-8 italic text-sm">This path will define your current incarnation.</p>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl">
             <div class="mystic-border p-6 rounded-2xl hover:border-blue-500 transition cursor-pointer" onclick="game.setTechnique('turtle')">
                 <h3 class="text-blue-400 font-bold text-xl mb-2">Steady Turtle</h3>
-                <p class="text-xs text-gray-500 mb-4">Focus on safety. Higher breakthrough chance, but slower Qi absorption.</p>
-                <div class="text-green-400 text-sm font-bold">+50% Success Rate</div>
-                <div class="text-red-400 text-sm">-30% Qi Speed</div>
+                <p class="text-xs text-gray-500 mb-4">+50% Success Rate | -30% Qi Speed</p>
             </div>
             <div class="mystic-border p-6 rounded-2xl hover:border-yellow-500 transition cursor-pointer" onclick="game.setTechnique('dao')">
                 <h3 class="text-yellow-500 font-bold text-xl mb-2">Balanced Dao</h3>
-                <p class="text-xs text-gray-500 mb-4">The middle path. Standard progression as intended by heaven.</p>
-                <div class="text-blue-400 text-sm">No Bonuses</div>
-                <div class="text-blue-400 text-sm">No Penalties</div>
+                <p class="text-xs text-gray-500 mb-4">Standard progression as intended by heaven.</p>
             </div>
             <div class="mystic-border p-6 rounded-2xl hover:border-red-600 transition cursor-pointer" onclick="game.setTechnique('phoenix')">
                 <h3 class="text-red-500 font-bold text-xl mb-2">Raging Phoenix</h3>
-                <p class="text-xs text-gray-500 mb-4">High risk, high reward. Rapid growth but the heavens are cruel.</p>
-                <div class="text-green-400 text-sm font-bold">+100% Qi Speed</div>
-                <div class="text-red-400 text-sm">-20% Success Rate</div>
+                <p class="text-xs text-gray-500 mb-4">+100% Qi Speed | -20% Success Rate</p>
             </div>
         </div>
     </div>
@@ -104,14 +126,13 @@
                     </div>
                     <div class="flex justify-between text-[10px] mt-2 text-gray-500 font-bold">
                         <span>Rate: <b id="rate-val" class="text-gray-300 font-mono">0</b>/s</span>
-                        <span id="p-tech-display"></span>
+                        <span id="move-cd" class="text-orange-400"></span>
                     </div>
                 </div>
 
                 <div class="mystic-border p-4 rounded-2xl">
                     <h2 class="text-[10px] font-bold uppercase text-purple-400 mb-2 flex justify-between">World Map <span>(Fog Active)</span></h2>
                     <div id="map-container" class="map-grid"></div>
-                    <p class="text-[8px] mt-2 text-gray-500 text-center italic">Only neighbors are visible. Click to occupy.</p>
                 </div>
             </div>
 
@@ -150,7 +171,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, doc, setDoc, query, orderBy, limit, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, doc, getDoc, setDoc, query, orderBy, limit, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyD7N-ZUGKm9hasgM0DD08scouydEEuiLvU",
@@ -163,15 +185,15 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const SAVE_KEY = "ImmortalSovereign_V7_Fog";
+        const auth = getAuth(app);
 
         const game = {
+            uid: null, isRegistering: false,
             state: {
                 name: "", qi: 0, realmIdx: 0, age: 18, maxAge: 100,
-                upgrades: { spirit: 0, tech: 0 },
-                karma: 0, rootMult: 1, lastTick: Date.now(),
+                upgrades: { spirit: 0, tech: 0 }, karma: 0, rootMult: 1,
                 technique: "dao", pos: -1, techniqueChosen: false,
-                isDead: false, moveCooldown: 0
+                lastTick: Date.now(), moveCooldown: 0
             },
             mapData: Array(25).fill(null).map((_, i) => ({ id: i, lord: null, level: 0, density: 1 + (i % 5 * 0.5), lordQi: 0 })),
             realms: [
@@ -187,34 +209,65 @@
                 name: n, req: Math.floor(100 * Math.pow(1.68, i)), color: `hsl(${250 + (i * 3)}, 70%, 50%)`, chance: Math.max(0.05, 1 - (i * 0.015))
             })),
 
-            init() {
-                const saved = localStorage.getItem(SAVE_KEY);
-                if (saved) this.state = {...this.state, ...JSON.parse(saved)};
-                if (!this.state.name) this.state.name = prompt("Enter your Daoist Name:") || "Daoist_" + Math.floor(Math.random()*999);
-                if (this.state.pos === -1) this.state.pos = Math.floor(Math.random() * 25);
-                
-                this.setupNetwork();
-                this.listenToLeaderboard();
-                this.listenToMap();
-                if (!this.state.techniqueChosen) document.getElementById('technique-screen').style.display = 'flex';
+            async init() {
+                const bar = document.getElementById('loading-bar');
+                setTimeout(() => bar.style.width = "40%", 200);
 
-                setInterval(() => this.tick(), 100);
-                setInterval(() => this.randomEvent(), 45000);
-                setInterval(() => this.save(), 5000);
-                this.render();
+                onAuthStateChanged(auth, async (user) => {
+                    bar.style.width = "70%";
+                    if (user) {
+                        this.uid = user.uid;
+                        await this.loadPlayerData(user.uid);
+                        document.getElementById('auth-screen').style.display = 'none';
+                        document.getElementById('loading-screen').style.opacity = '0';
+                        setTimeout(() => document.getElementById('loading-screen').style.display = 'none', 1000);
+                        
+                        this.setupNetwork();
+                        this.listenToLeaderboard();
+                        this.listenToMap();
+                        setInterval(() => this.tick(), 100);
+                    } else {
+                        bar.style.width = "100%";
+                        document.getElementById('auth-screen').style.display = 'flex';
+                    }
+                });
             },
 
-            save() { localStorage.setItem(SAVE_KEY, JSON.stringify(this.state)); },
+            toggleAuthMode() {
+                this.isRegistering = !this.isRegistering;
+                document.getElementById('auth-title').innerText = this.isRegistering ? "Register Soul" : "Enter the Dao";
+                document.getElementById('auth-toggle').innerText = this.isRegistering ? "Already a seeker? Login." : "New seeker? Register your soul.";
+            },
 
-            setTechnique(type) {
-                this.state.technique = type;
-                this.state.techniqueChosen = true;
-                document.getElementById('technique-screen').style.display = 'none';
-                this.save();
+            async handleAuth() {
+                const email = document.getElementById('auth-email').value;
+                const pass = document.getElementById('auth-pass').value;
+                if(!email || !pass) return alert("Fill all fields");
+
+                try {
+                    if (this.isRegistering) {
+                        const name = prompt("Enter your Immortal Name:");
+                        if(!name) return;
+                        const res = await createUserWithEmailAndPassword(auth, email, pass);
+                        this.state.name = name;
+                        this.state.pos = Math.floor(Math.random() * 25);
+                        await setDoc(doc(db, "users", res.user.uid), this.state);
+                    } else {
+                        await signInWithEmailAndPassword(auth, email, pass);
+                    }
+                } catch (e) { alert(e.message); }
+            },
+
+            async loadPlayerData(uid) {
+                const d = await getDoc(doc(db, "users", uid));
+                if (d.exists()) this.state = {...this.state, ...d.data()};
+            },
+
+            async save() {
+                if (this.uid) await setDoc(doc(db, "users", this.uid), this.state);
             },
 
             tick() {
-                if (this.state.isDead) return;
                 const now = Date.now();
                 const dt = (now - this.state.lastTick) / 1000;
                 this.state.lastTick = now;
@@ -224,11 +277,9 @@
                 let techRate = this.state.technique === 'turtle' ? 0.7 : (this.state.technique === 'phoenix' ? 2.0 : 1.0);
                 const currentTile = this.mapData[this.state.pos];
                 const mapBonus = (currentTile && currentTile.lord === this.state.name) ? currentTile.density : 1.0;
-                
                 const rate = (1 + this.state.upgrades.spirit) * Math.pow(1.5, this.state.realmIdx) * this.state.rootMult * techRate * mapBonus;
-                const targetReq = this.realms[this.state.realmIdx].req;
-                this.state.qi = Math.min(targetReq, this.state.qi + (rate * dt));
                 
+                this.state.qi = Math.min(this.realms[this.state.realmIdx].req, this.state.qi + (rate * dt));
                 this.state.age += dt / 60;
                 if (this.state.age >= this.state.maxAge) this.die();
                 this.render(rate);
@@ -246,199 +297,106 @@
             async breakthrough() {
                 const r = this.realms[this.state.realmIdx];
                 let successMod = this.state.technique === 'turtle' ? 1.5 : (this.state.technique === 'phoenix' ? 0.8 : 1.0);
-                const finalChance = r.chance * successMod;
-
-                document.body.classList.add('strike');
-                setTimeout(() => document.body.classList.remove('strike'), 400);
-
-                if (Math.random() <= finalChance) {
-                    this.state.realmIdx++;
-                    this.state.qi = 0;
-                    this.state.maxAge += 50;
-                    this.addLog(`<span class="text-green-400 font-bold">SUCCESS! You are now a ${this.realms[this.state.realmIdx].name}!</span>`);
-                    await setDoc(doc(db, "highscores", this.state.name), { 
-                        player: this.state.name, realm: this.realms[this.state.realmIdx].name, level: this.state.realmIdx, updatedAt: serverTimestamp() 
-                    });
+                if (Math.random() <= (r.chance * successMod)) {
+                    this.state.realmIdx++; this.state.qi = 0; this.state.maxAge += 50;
+                    this.addLog(`<span class="text-green-400 font-bold">ASCENDED TO ${this.realms[this.state.realmIdx].name}!</span>`);
+                    await setDoc(doc(db, "highscores", this.state.name), { player: this.state.name, realm: this.realms[this.state.realmIdx].name, level: this.state.realmIdx, updatedAt: serverTimestamp() });
                 } else {
                     this.state.qi *= 0.5;
-                    this.addLog(`<span class="text-red-500 font-bold">FAILURE! The heavens reject you. Qi dispersed!</span>`);
+                    this.addLog(`<span class="text-red-500 font-bold">FAILURE! Qi Dispersed.</span>`);
                 }
                 this.save();
-                this.render();
             },
 
             async occupyTile(id) {
-                if (this.state.moveCooldown > 0) return this.addLog(`<span class="text-orange-400">Qi unstable! Wait ${Math.ceil(this.state.moveCooldown)}s.</span>`);
-                
+                if (this.state.moveCooldown > 0) return this.addLog(`Wait ${Math.ceil(this.state.moveCooldown)}s`);
                 const target = this.mapData[id];
-                const myRow = Math.floor(this.state.pos / 5); const myCol = this.state.pos % 5;
-                const tRow = Math.floor(id / 5); const tCol = id % 5;
-                
+                const myRow = Math.floor(this.state.pos / 5), myCol = this.state.pos % 5;
+                const tRow = Math.floor(id / 5), tCol = id % 5;
                 if (Math.abs(myRow - tRow) > 1 || Math.abs(myCol - tCol) > 1) return;
                 if (target.lord === this.state.name) return;
 
-                // BATTLE LOGIC
                 if (target.lord) {
-                    this.addLog(`⚔️ Challenging ${target.lord}...`);
-                    let win = false;
-                    if (this.state.realmIdx > target.level) win = true;
-                    else if (this.state.realmIdx === target.level && this.state.qi > (target.lordQi || 0)) win = true;
-
+                    let win = this.state.realmIdx > target.level || (this.state.realmIdx === target.level && this.state.qi > (target.lordQi || 0));
                     if (!win) {
-                        this.state.qi *= 0.7; // Qi Shock
-                        this.state.moveCooldown = 5;
-                        this.triggerFlash('red');
-                        return this.addLog(`<span class="text-red-500 font-bold">BATTLE LOST! ${target.lord} suppressed your Dao.</span>`);
+                        this.state.qi *= 0.7; this.state.moveCooldown = 5;
+                        this.triggerFlash('red'); return this.addLog(`Defeated by ${target.lord}!`);
                     }
                     this.triggerFlash('gold');
-                    this.addLog(`<span class="text-yellow-400 font-bold">BATTLE WON! You drove ${target.lord} away.</span>`);
                 }
 
-                await setDoc(doc(db, "map", `tile_${id}`), { 
-                    lord: this.state.name, 
-                    level: this.state.realmIdx, 
-                    lordQi: this.state.qi,
-                    density: target.density, 
-                    at: serverTimestamp() 
-                });
-                this.state.pos = id;
-                this.save();
+                await setDoc(doc(db, "map", `tile_${id}`), { lord: this.state.name, level: this.state.realmIdx, lordQi: this.state.qi, density: target.density, at: serverTimestamp() });
+                this.state.pos = id; this.save();
             },
 
             triggerFlash(color) {
                 const overlay = document.createElement('div');
                 overlay.className = `fixed inset-0 z-[100] pointer-events-none opacity-30 ${color === 'red' ? 'bg-red-600' : 'bg-yellow-500'}`;
-                document.body.appendChild(overlay);
-                setTimeout(() => overlay.remove(), 250);
+                document.body.appendChild(overlay); setTimeout(() => overlay.remove(), 250);
             },
 
-            listenToMap() {
-                onSnapshot(query(collection(db, "map")), (sn) => {
-                    sn.forEach(d => {
-                        const id = parseInt(d.id.split('_')[1]);
-                        this.mapData[id] = { ...this.mapData[id], ...d.data() };
-                    });
-                    this.renderMap();
-                });
-            },
+            setTechnique(type) { this.state.technique = type; this.state.techniqueChosen = true; document.getElementById('technique-screen').style.display = 'none'; this.save(); },
+
+            listenToMap() { onSnapshot(query(collection(db, "map")), (sn) => { sn.forEach(d => { const id = parseInt(d.id.split('_')[1]); this.mapData[id] = { ...this.mapData[id], ...d.data() }; }); this.renderMap(); }); },
 
             renderMap() {
-                const container = document.getElementById('map-container');
-                container.innerHTML = "";
-                const myRow = Math.floor(this.state.pos / 5); const myCol = this.state.pos % 5;
-
+                const container = document.getElementById('map-container'); container.innerHTML = "";
+                const myRow = Math.floor(this.state.pos / 5), myCol = this.state.pos % 5;
                 this.mapData.forEach(tile => {
-                    const tRow = Math.floor(tile.id / 5); const tCol = tile.id % 5;
-                    const isVisible = Math.abs(myRow - tRow) <= 1 && Math.abs(myCol - tCol) <= 1;
+                    const isVisible = Math.abs(myRow - Math.floor(tile.id / 5)) <= 1 && Math.abs(myCol - (tile.id % 5)) <= 1;
                     const div = document.createElement('div');
                     div.className = `tile ${tile.id === this.state.pos ? 'tile-active' : ''} ${!isVisible ? 'fog' : (tile.lord ? 'bg-purple-900/30' : 'bg-black/40')}`;
-                    
                     if (isVisible) {
-                        div.innerHTML = `<span class="text-gray-500 font-mono">${tile.density.toFixed(1)}x</span>
-                                         <span class="truncate w-full px-1 text-center font-bold" style="color:${tile.lord ? '#a855f7' : '#444'}">${tile.lord || 'Empty'}</span>`;
+                        div.innerHTML = `<span class="text-gray-500 font-mono">${tile.density.toFixed(1)}x</span><span class="truncate w-full px-1 text-center font-bold" style="color:${tile.lord ? '#a855f7' : '#444'}">${tile.lord || 'Empty'}</span>`;
                         div.onclick = () => this.occupyTile(tile.id);
-                    } else { div.innerHTML = `<span class="text-gray-800">???</span>`; }
+                    } else { div.innerHTML = `???`; }
                     container.appendChild(div);
                 });
             },
 
-            randomEvent() {
-                const modal = document.getElementById('event-modal');
-                const events = [
-                    { t: "Sacred Herb", d: "You find a glowing herb. Consume it?", o1: "Refine (Qi)", o2: "Plant (Karma)", r1: () => this.state.qi += (this.realms[this.state.realmIdx].req * 0.1), r2: () => this.state.karma += 50 },
-                    { t: "Ancient Tablet", d: "A crumbling stone tablet holds secrets.", o1: "Study (Qi)", o2: "Transcribe (Karma)", r1: () => this.state.qi += (this.realms[this.state.realmIdx].req * 0.15), r2: () => this.state.karma += 30 }
-                ];
-                const e = events[Math.floor(Math.random()*events.length)];
-                document.getElementById('event-title').innerText = e.t; 
-                document.getElementById('event-desc').innerText = e.d;
-                document.getElementById('event-opt1').innerText = e.o1; 
-                document.getElementById('event-opt2').innerText = e.o2;
-                modal.style.display = 'flex';
-                document.getElementById('event-opt1').onclick = () => { e.r1(); modal.style.display = 'none'; this.render(); };
-                document.getElementById('event-opt2').onclick = () => { e.r2(); modal.style.display = 'none'; this.render(); };
-            },
-
-            die() {
-                this.state.isDead = true;
-                this.state.karma += this.state.realmIdx * 20;
-                document.getElementById('karma-gain').innerText = this.state.realmIdx * 20;
-                document.getElementById('reincarnation-screen').style.display = 'flex';
-                document.getElementById('death-msg').innerText = `${this.state.name} has returned to the earth.`;
-            },
+            die() { document.getElementById('karma-gain').innerText = this.state.realmIdx * 20; document.getElementById('reincarnation-screen').style.display = 'flex'; },
 
             reincarnate(mult, cost) {
-                if (this.state.karma < cost) return alert("Insufficient Karma!");
-                this.state.karma -= cost; 
-                this.state.rootMult = mult; 
-                this.state.age = 18; 
-                this.state.maxAge = 100; 
-                this.state.realmIdx = 0; 
-                this.state.qi = 0;
-                this.state.upgrades = { spirit: 0, tech: 0 }; 
-                this.state.techniqueChosen = false; 
-                this.state.pos = Math.floor(Math.random() * 25);
-                this.state.isDead = false;
-                document.getElementById('reincarnation-screen').style.display = 'none';
-                document.getElementById('technique-screen').style.display = 'flex';
-                this.save();
+                if (this.state.karma < cost) return alert("Need more Karma!");
+                this.state.karma -= cost; this.state.rootMult = mult; this.state.age = 18; this.state.maxAge = 100; this.state.realmIdx = 0; this.state.qi = 0; this.state.techniqueChosen = false;
+                document.getElementById('reincarnation-screen').style.display = 'none'; document.getElementById('technique-screen').style.display = 'flex'; this.save();
             },
 
             render(rate = 0) {
                 const r = this.realms[this.state.realmIdx];
-                let successMod = this.state.technique === 'turtle' ? 1.5 : (this.state.technique === 'phoenix' ? 0.8 : 1.0);
                 document.getElementById('p-name').innerText = this.state.name;
                 document.getElementById('p-realm').innerText = r.name;
-                document.getElementById('p-tech').innerText = "Path: " + this.state.technique;
                 document.getElementById('qi-val').innerText = Math.floor(this.state.qi).toLocaleString();
                 document.getElementById('qi-bar').style.width = (Math.min(100, (this.state.qi / r.req * 100))) + "%";
                 document.getElementById('age').innerText = Math.floor(this.state.age);
                 document.getElementById('maxAge').innerText = Math.floor(this.state.maxAge);
                 document.getElementById('karma').innerText = Math.floor(this.state.karma);
-                document.getElementById('root').innerText = this.state.rootMult.toFixed(1) + "x";
+                document.getElementById('root').innerText = this.state.rootMult + "x";
                 document.getElementById('rate-val').innerText = Math.floor(rate).toLocaleString();
-                document.getElementById('success-val').innerText = (r.chance * successMod * 100).toFixed(0) + "%";
+                document.getElementById('move-cd').innerText = this.state.moveCooldown > 0 ? `Injured: ${Math.ceil(this.state.moveCooldown)}s` : "";
                 document.documentElement.style.setProperty('--realm-color', r.color);
                 document.getElementById('break-btn').style.display = (this.state.qi >= r.req) ? 'block' : 'none';
             },
 
-            addLog(msg) {
-                const log = document.getElementById('log');
-                const div = document.createElement('div');
-                div.className = "border-l-2 border-purple-500 pl-2 mb-1";
-                div.innerHTML = msg;
-                log.prepend(div);
-                if (log.children.length > 50) log.lastChild.remove();
-            },
+            addLog(msg) { const log = document.getElementById('log'); const div = document.createElement('div'); div.innerHTML = msg; log.prepend(div); if (log.children.length > 30) log.lastChild.remove(); },
 
-            listenToLeaderboard() {
-                onSnapshot(query(collection(db, "highscores"), orderBy("level", "desc"), limit(10)), (sn) => {
-                    const list = document.getElementById('leaderboard-list'); 
-                    list.innerHTML = "";
-                    sn.forEach(d => {
-                        const data = d.data();
-                        list.innerHTML += `<li class="p-3 bg-white/5 rounded-xl border-l-4 border-purple-500 text-xs shadow-md">
-                            <b class="text-purple-300 text-sm">${data.player}</b><br>
-                            <span class="text-yellow-500 font-bold uppercase tracking-tighter">${data.realm}</span>
-                        </li>`;
-                    });
-                });
-            },
+            listenToLeaderboard() { onSnapshot(query(collection(db, "highscores"), orderBy("level", "desc"), limit(10)), (sn) => { const list = document.getElementById('leaderboard-list'); list.innerHTML = ""; sn.forEach(d => { list.innerHTML += `<li class="p-3 bg-white/5 rounded-xl border-l-4 border-purple-500 text-xs"><b>${d.data().player}</b><br><span class="text-yellow-500">${d.data().realm}</span></li>`; }); }); },
 
             setupNetwork() {
-                onSnapshot(query(collection(db, "messages"), orderBy("createdAt", "desc"), limit(15)), (sn) => {
-                    const chat = document.getElementById('chat'); 
-                    chat.innerHTML = "";
-                    sn.forEach(d => { 
-                        chat.innerHTML += `<div class="bg-white/5 p-2 rounded-lg"><b class="text-purple-400 font-bold">${d.data().user}</b>: <span class="text-gray-300">${d.data().text}</span></div>`; 
-                    });
-                });
-                document.getElementById('chat-form').onsubmit = async (e) => {
-                    e.preventDefault();
-                    const input = document.getElementById('chat-input');
-                    if (!input.value.trim()) return;
-                    await addDoc(collection(db, "messages"), { user: this.state.name, text: input.value, createdAt: serverTimestamp() });
-                    input.value = "";
-                };
+                onSnapshot(query(collection(db, "messages"), orderBy("createdAt", "desc"), limit(15)), (sn) => { const chat = document.getElementById('chat'); chat.innerHTML = ""; sn.forEach(d => { chat.innerHTML += `<div class="bg-white/5 p-2 rounded-lg text-xs"><b>${d.data().user}</b>: ${d.data().text}</div>`; }); });
+                document.getElementById('chat-form').onsubmit = async (e) => { e.preventDefault(); const i = document.getElementById('chat-input'); if (!i.value.trim()) return; await addDoc(collection(db, "messages"), { user: this.state.name, text: i.value, createdAt: serverTimestamp() }); i.value = ""; };
+            },
+
+            randomEvent() {
+                if (Math.random() > 0.3) return;
+                const modal = document.getElementById('event-modal');
+                document.getElementById('event-title').innerText = "Ancient Tablet";
+                document.getElementById('event-desc').innerText = "A tablet found in the fog. Study it?";
+                document.getElementById('event-opt1').innerText = "Gain Qi";
+                document.getElementById('event-opt2').innerText = "Gain Karma";
+                modal.style.display = 'flex';
+                document.getElementById('event-opt1').onclick = () => { this.state.qi += 1000; modal.style.display = 'none'; };
+                document.getElementById('event-opt2').onclick = () => { this.state.karma += 50; modal.style.display = 'none'; };
             }
         };
 
