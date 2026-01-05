@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Path to Immortality | Cultivation Idle</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0a0a0c; color: #e2e8f0; font-family: 'Georgia', serif; }
+        .qi-gradient { background: linear-gradient(135deg, #4c1d95 0%, #1e1b4b 100%); }
+        .progress-bar { transition: width 0.2s ease-out; }
+        .mystic-border { border: 1px solid rgba(139, 92, 246, 0.3); }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+        .meditate-anim { animation: float 3s ease-in-out infinite; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-4xl mx-auto">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-purple-400 mb-2">Immortal Path</h1>
+            <div class="flex justify-center gap-4 text-sm text-gray-400">
+                <span>Realm: <b id="realm" class="text-yellow-500">Mortal</b></span>
+                <span>Lifespan: <span id="age">18</span> / <span id="maxAge">100</span> Years</span>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="mystic-border bg-gray-900/50 p-6 rounded-xl">
+                <h2 class="text-xl font-semibold mb-4 border-b border-purple-900 pb-2">Cultivation</h2>
+                <div class="mb-6">
+                    <div class="flex justify-between mb-1 text-sm">
+                        <span>Qi Essence</span>
+                        <span id="qi-display">0</span>
+                    </div>
+                    <div class="w-full bg-gray-800 rounded-full h-4 overflow-hidden">
+                        <div id="qi-bar" class="qi-gradient h-full progress-bar" style="width: 0%"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">Next Realm: <span id="qi-needed">100</span> Qi</p>
+                </div>
+                
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between"><span>Absorption Rate:</span> <span id="rate">1.0</span>/s</div>
+                    <div class="flex justify-between"><span>Spirit Root:</span> <span class="text-green-400">Grade D</span></div>
+                </div>
+            </div>
+
+            <div class="md:col-span-2 flex flex-col gap-6">
+                <div class="mystic-border bg-gray-900/80 p-12 rounded-xl text-center relative overflow-hidden">
+                    <div class="meditate-anim relative z-10">
+                        <div class="w-32 h-32 mx-auto rounded-full border-4 border-purple-500/30 flex items-center justify-center mb-4 shadow-[0_0_50px_rgba(139,92,246,0.2)]">
+                            <span class="text-5xl">🧘‍♂️</span>
+                        </div>
+                        <button onclick="manualMeditate()" class="bg-purple-700 hover:bg-purple-600 px-8 py-3 rounded-full font-bold transition-all active:scale-95 shadow-lg">
+                            Gather Qi
+                        </button>
+                    </div>
+                    <div class="absolute inset-0 opacity-10 pointer-events-none flex items-center justify-center text-[10rem]">☯</div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <button onclick="buyUpgrade('spirit')" id="upg-spirit" class="mystic-border p-4 rounded-lg bg-gray-800 hover:bg-gray-700 text-left transition">
+                        <div class="font-bold text-purple-300">Spirit Stone</div>
+                        <div class="text-xs text-gray-400 mb-2">Passively increases Qi gather rate</div>
+                        <div class="text-sm font-mono text-yellow-500">Cost: <span id="upg-spirit-cost">10</span> Qi</div>
+                    </button>
+
+                    <button onclick="breakthrough()" id="btn-breakthrough" class="hidden mystic-border p-4 rounded-lg bg-yellow-900/20 border-yellow-500/50 hover:bg-yellow-900/40 text-left transition border-dashed">
+                        <div class="font-bold text-yellow-400">Breakthrough!</div>
+                        <div class="text-xs text-gray-400 mb-2">Risk the tribulation to ascend realms</div>
+                        <div class="text-sm font-mono text-yellow-500">Requires Full Qi</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8">
+            <div id="log" class="bg-black/40 p-4 rounded-lg h-32 overflow-y-auto text-sm text-gray-500 border border-gray-800">
+                <p>> You begin your journey on the Path to Immortality...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        let state = {
+            qi: 0,
+            totalQi: 0,
+            realmIndex: 0,
+            qiRate: 0,
+            age: 18,
+            maxAge: 100,
+            upgrades: { spirit: 0 },
+            lastTick: Date.now()
+        };
+
+        const realms = [
+            { name: "Mortal", requirement: 100 },
+            { name: "Qi Condensation", requirement: 1000 },
+            { name: "Foundation Establishment", requirement: 10000 },
+            { name: "Core Formation", requirement: 100000 },
+            { name: "Nascent Soul", requirement: 1000000 }
+        ];
+
+        // Core Functions
+        function update() {
+            const now = Date.now();
+            const dt = (now - state.lastTick) / 1000;
+            state.lastTick = now;
+
+            // Passive Growth
+            if (state.qiRate > 0) {
+                gainQi(state.qiRate * dt);
+            }
+
+            // Aging (1 year every 60 seconds)
+            state.age += dt / 60;
+            if (state.age >= state.maxAge) {
+                addLog("You have reached the end of your lifespan. You pass away peacefully...");
+                resetGame();
+            }
+
+            render();
+        }
+
+        function gainQi(amount) {
+            const req = realms[state.realmIndex].requirement;
+            if (state.qi < req) {
+                state.qi = Math.min(req, state.qi + amount);
+            }
+        }
+
+        function manualMeditate() {
+            gainQi(1 + (state.realmIndex * 5));
+            render();
+        }
+
+        function buyUpgrade(type) {
+            const cost = 10 * Math.pow(1.5, state.upgrades[type]);
+            if (state.qi >= cost) {
+                state.qi -= cost;
+                state.upgrades[type]++;
+                state.qiRate += 0.5 * (state.realmIndex + 1);
+                addLog(`You acquired a Spirit Stone. Qi flow improves.`);
+            }
+        }
+
+        function breakthrough() {
+            const req = realms[state.realmIndex].requirement;
+            if (state.qi >= req) {
+                state.realmIndex++;
+                state.qi = 0;
+                state.maxAge += 100; // Cultivation extends life
+                addLog(`TREMENDOUS! You have broken through to ${realms[state.realmIndex].name}!`);
+                saveGame();
+            }
+        }
+
+        // UI & Systems
+        function render() {
+            const currentRealm = realms[state.realmIndex];
+            document.getElementById('qi-display').innerText = Math.floor(state.qi);
+            document.getElementById('qi-bar').style.width = (state.qi / currentRealm.requirement * 100) + "%";
+            document.getElementById('realm').innerText = currentRealm.name;
+            document.getElementById('qi-needed').innerText = currentRealm.requirement;
+            document.getElementById('rate').innerText = state.qiRate.toFixed(1);
+            document.getElementById('age').innerText = Math.floor(state.age);
+            document.getElementById('maxAge').innerText = state.maxAge;
+            
+            document.getElementById('upg-spirit-cost').innerText = Math.floor(10 * Math.pow(1.5, state.upgrades.spirit));
+            
+            // Show/Hide Breakthrough
+            const btn = document.getElementById('btn-breakthrough');
+            if (state.qi >= currentRealm.requirement && state.realmIndex < realms.length - 1) {
+                btn.classList.remove('hidden');
+            } else {
+                btn.classList.add('hidden');
+            }
+        }
+
+        function addLog(msg) {
+            const log = document.getElementById('log');
+            log.innerHTML = `<p>> ${msg}</p>` + log.innerHTML;
+        }
+
+        function saveGame() {
+            localStorage.setItem('cultivationSave', JSON.stringify(state));
+        }
+
+        function loadGame() {
+            const saved = localStorage.getItem('cultivationSave');
+            if (saved) state = Object.assign(state, JSON.parse(saved));
+        }
+
+        function resetGame() {
+            localStorage.removeItem('cultivationSave');
+            location.reload();
+        }
+
+        // Initialization
+        loadGame();
+        setInterval(update, 100);
+        setInterval(saveGame, 10000); // Autosave every 10s
+    </script>
+</body>
+</html>
