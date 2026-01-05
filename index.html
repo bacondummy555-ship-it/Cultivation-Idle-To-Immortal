@@ -14,6 +14,7 @@
         .meditate-anim { animation: float 3s ease-in-out infinite; }
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-thumb { background: #4c1d95; border-radius: 10px; }
+        #chat-messages { height: 200px; overflow-y: auto; display: flex; flex-direction: column-reverse; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -63,6 +64,16 @@
                         <div class="text-xs text-gray-300 italic">80% Success Rate</div>
                     </button>
                 </div>
+
+                <div class="mystic-border bg-gray-900/50 rounded-xl overflow-hidden flex flex-col">
+                    <div class="bg-purple-900/20 p-2 text-xs font-bold border-b border-purple-900/50 text-purple-400 uppercase tracking-widest">Global Daoist Square</div>
+                    <div id="chat-messages" class="p-4 space-y-2 text-sm">
+                        </div>
+                    <form id="chat-form" class="flex border-t border-purple-900/50">
+                        <input type="text" id="chat-input" placeholder="Transmit your thoughts..." class="flex-grow bg-black/50 p-2 outline-none text-sm focus:bg-black/80 transition" maxlength="100">
+                        <button type="submit" class="bg-purple-900/40 px-4 hover:bg-purple-800 transition text-xs font-bold">SEND</button>
+                    </form>
+                </div>
             </div>
 
             <div class="mystic-border bg-gray-900/50 p-6 rounded-xl">
@@ -99,7 +110,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- PARTICLE SYSTEM ---
+        // --- PARTICLE SYSTEM --- (Existing)
         const canvas = document.getElementById('particleCanvas');
         const ctx = canvas.getContext('2d');
         canvas.width = canvas.offsetWidth;
@@ -146,12 +157,11 @@
             realms: [
                 { name: "Mortal", requirement: 100 },
                 { name: "Qi Condensation", requirement: 1000 },
-                { name: "Foundation Establishment", requirement: 10000 },
+                { name: "Foundation", requirement: 10000 },
                 { name: "Core Formation", requirement: 100000 },
                 { name: "Nascent Soul", requirement: 1000000 }
             ],
             init() {
-                // Get Name
                 if (!this.state.playerName) {
                     const name = prompt("Enter your Cultivator Name:", "Humble Daoist");
                     this.state.playerName = name || "Anonymous";
@@ -165,6 +175,8 @@
                 }
                 
                 this.listenToLeaderboard();
+                this.listenToChat();
+                this.setupChatForm();
                 setInterval(() => this.update(), 100);
             },
             update() {
@@ -193,15 +205,13 @@
             async breakthrough() {
                 const req = this.realms[this.state.realmIndex].requirement;
                 if (this.state.qi >= req) {
-                    // 80% Success Rate for Tribulation
                     if (Math.random() > 0.2) {
                         this.state.realmIndex++;
                         this.state.qi = 0;
                         this.state.maxAge += 100;
-                        this.addLog(`SUCCESS! You survived the tribulation to reach ${this.realms[this.state.realmIndex].name}!`);
+                        this.addLog(`SUCCESS! You reached ${this.realms[this.state.realmIndex].name}!`);
                         
-                        this.saveGame();
-
+                        // Update Leaderboard immediately upon breakthrough
                         try {
                             await addDoc(collection(db, "highscores"), {
                                 player: this.state.playerName,
@@ -212,9 +222,9 @@
                         } catch (e) { console.error(e); }
                     } else {
                         this.state.qi -= (req * 0.4);
-                        this.addLog("TRIBULATION FAILED! The heavens rejected you. You lost 40% Qi.");
-                        this.saveGame();
+                        this.addLog("TRIBULATION FAILED! Lost 40% Qi.");
                     }
+                    this.saveGame();
                 }
             },
             render() {
@@ -238,25 +248,53 @@
             },
             saveGame() { localStorage.setItem('cultivationSave', JSON.stringify(this.state)); },
             resetGame() { 
-                this.addLog("Your lifespan has ended. Returning to the cycle of reincarnation...");
-                setTimeout(() => {
-                    localStorage.removeItem('cultivationSave'); 
-                    location.reload(); 
-                }, 2000);
+                this.addLog("Returning to the cycle of reincarnation...");
+                setTimeout(() => { localStorage.removeItem('cultivationSave'); location.reload(); }, 2000);
             },
+            
+            // --- FIREBASE FEATURES ---
             listenToLeaderboard() {
-                const q = query(collection(db, "highscores"), orderBy("level", "desc"), limit(8));
+                const q = query(collection(db, "highscores"), orderBy("level", "desc"), limit(10));
                 onSnapshot(q, (snapshot) => {
                     let html = "";
                     snapshot.forEach(doc => {
                         const data = doc.data();
                         html += `<li class="border-l-2 border-purple-500 pl-2 py-1 bg-white/5">
-                                    <span class="text-white font-bold">${data.player}</span><br>
-                                    <span class="text-xs text-yellow-500">${data.realm}</span>
-                                 </li>`;
+                            <span class="text-white font-bold">${data.player}</span><br>
+                            <span class="text-xs text-yellow-500">${data.realm}</span>
+                        </li>`;
                     });
                     document.getElementById('leaderboard-list').innerHTML = html || "No legends yet...";
                 });
+            },
+            listenToChat() {
+                const q = query(collection(db, "messages"), orderBy("createdAt", "desc"), limit(20));
+                onSnapshot(q, (snapshot) => {
+                    const chatContainer = document.getElementById('chat-messages');
+                    chatContainer.innerHTML = "";
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        const div = document.createElement('div');
+                        div.innerHTML = `<span class="text-purple-400 font-bold">${data.user}:</span> <span class="text-gray-300">${data.text}</span>`;
+                        chatContainer.appendChild(div);
+                    });
+                });
+            },
+            setupChatForm() {
+                document.getElementById('chat-form').onsubmit = async (e) => {
+                    e.preventDefault();
+                    const input = document.getElementById('chat-input');
+                    const text = input.value.trim();
+                    if(!text) return;
+                    input.value = "";
+                    try {
+                        await addDoc(collection(db, "messages"), {
+                            user: this.state.playerName,
+                            text: text,
+                            createdAt: serverTimestamp()
+                        });
+                    } catch(e) { console.error("Chat failed", e); }
+                };
             }
         };
         window.game.init();
