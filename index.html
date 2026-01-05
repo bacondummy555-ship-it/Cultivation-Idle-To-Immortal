@@ -102,7 +102,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Firebase Configuration (Same as provided)
+        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyD7N-ZUGKm9hasgM0DD08scouydEEuiLvU",
             authDomain: "path-to-immortality-78ad8.firebaseapp.com",
@@ -139,7 +139,7 @@
         animate();
 
         // --- GAME LOGIC ---
-        window.game = {
+        const gameInstance = {
             state: {
                 playerName: localStorage.getItem('playerName') || "",
                 qi: 0,
@@ -180,8 +180,8 @@
                 this.listenToLeaderboard(); 
                 this.listenToChat(); 
                 this.setupChatForm();
-                setInterval(() => this.update(), 100);
-                setInterval(() => this.saveGame(), 10000); // Autosave every 10s
+                setInterval(() => this.tick(), 100);
+                setInterval(() => this.saveGame(), 10000);
             },
 
             formatNum(num) {
@@ -189,19 +189,18 @@
                 return Math.floor(num).toLocaleString();
             },
 
-            update() {
+            tick() {
                 const now = Date.now();
                 const dt = (now - this.state.lastTick) / 1000;
                 this.state.lastTick = now;
 
-                // Improved Formula Math
                 const techMult = 1 + (this.state.upgrades.tech * 2);
                 const realmMult = Math.pow(1.5, this.state.realmIndex); 
                 const rootMult = 1 + (this.state.rootGrade * 0.5);
                 const totalRate = (this.state.baseQiRate + (this.state.upgrades.spirit * 2)) * techMult * realmMult * rootMult;
 
                 this.gainQi(totalRate * dt);
-                this.state.age += dt / 60; // 1 year = 1 real minute
+                this.state.age += dt / 60;
                 
                 if (this.state.age >= this.state.maxAge) this.resetGame();
                 this.render(totalRate);
@@ -243,7 +242,6 @@
                         this.state.karma += (this.state.realmIndex * 50);
                         this.addLog(`⚡ SUCCESS! You reached the ${this.realms[this.state.realmIndex].name} Realm!`);
                         
-                        // Push to Cloud
                         try {
                             await addDoc(collection(db, "highscores"), {
                                 player: this.state.playerName,
@@ -258,7 +256,7 @@
                             });
                         } catch(e) { console.error("Cloud Error", e); }
                     } else {
-                        this.state.qi *= 0.7; // Lose 30% on failure
+                        this.state.qi *= 0.7;
                         this.addLog("Tribulation Failed! Your Qi was scattered.");
                     }
                     this.saveGame();
@@ -275,17 +273,15 @@
                 document.getElementById('age').innerText = Math.floor(this.state.age);
                 document.getElementById('maxAge').innerText = this.state.maxAge;
                 document.getElementById('karma-display').innerText = this.state.karma;
-                document.getElementById('root-grade').innerText = `Grade ${this.rootNames[this.state.rootGrade]}`;
+                document.getElementById('root-grade').innerText = `Grade ${this.rootNames[this.state.rootGrade] || 'Unknown'}`;
                 document.getElementById('tech-level').innerText = `Lv ${this.state.upgrades.tech}`;
                 document.getElementById('player-name-display').innerText = this.state.playerName;
                 
-                // Costs
                 const sCost = this.getUpgradeCost('spirit');
                 const tCost = this.getUpgradeCost('tech');
                 document.getElementById('upg-spirit-cost').innerText = this.formatNum(sCost);
                 document.getElementById('upg-tech-cost').innerText = this.formatNum(tCost);
                 
-                // Button States
                 document.getElementById('btn-upg-spirit').disabled = this.state.qi < sCost;
                 document.getElementById('btn-upg-tech').disabled = this.state.qi < tCost;
 
@@ -379,6 +375,9 @@
                 };
             }
         };
+
+        // EXPOSE TO GLOBAL SCOPE FOR HTML ONCLICK
+        window.game = gameInstance;
         window.game.init();
     </script>
 </body>
