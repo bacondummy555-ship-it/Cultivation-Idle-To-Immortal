@@ -16,6 +16,12 @@
         .float { animation: float 4s ease-in-out infinite; }
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
+        .map-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+        .tile { aspect-ratio: 1; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 8px; transition: all 0.2s; position: relative; overflow: hidden; }
+        .tile:hover { background: rgba(255,255,255,0.1); }
+        .tile-active { border: 1px solid #a855f7; box-shadow: inset 0 0 10px #a855f7; z-index: 10; }
+        .fog { background: #111 !important; color: #333 !important; cursor: help; }
+
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: var(--realm-color); border-radius: 10px; }
     </style>
@@ -97,16 +103,11 @@
                         <span>Success: <b id="success-val">100%</b></span>
                     </div>
                 </div>
-                
-                <div class="grid grid-cols-1 gap-3">
-                    <button onclick="game.buyUpgrade('spirit')" class="mystic-border p-4 rounded-xl flex justify-between items-center hover:bg-purple-900/20 transition">
-                        <div class="text-left"><p class="font-bold text-purple-300">Gathering Array</p></div>
-                        <span id="cost-spirit" class="text-yellow-500 font-mono text-xs">10</span>
-                    </button>
-                    <button onclick="game.buyUpgrade('tech')" class="mystic-border p-4 rounded-xl flex justify-between items-center hover:bg-orange-900/20 transition">
-                        <div class="text-left"><p class="font-bold text-orange-400">Mental Method</p></div>
-                        <span id="cost-tech" class="text-yellow-500 font-mono text-xs">50</span>
-                    </button>
+
+                <div class="mystic-border p-4 rounded-2xl">
+                    <h2 class="text-[10px] font-bold uppercase text-purple-400 mb-2">World Map (Fog Active)</h2>
+                    <div id="map-container" class="map-grid"></div>
+                    <p class="text-[8px] mt-2 text-gray-500 text-center italic">Only neighbors are visible.</p>
                 </div>
             </div>
 
@@ -136,21 +137,9 @@
                 </div>
             </div>
 
-            <div class="space-y-6">
-                <div class="mystic-border p-4 rounded-2xl border-orange-500/30">
-                    <h2 class="text-[10px] font-bold uppercase text-orange-400 mb-2 text-center">Spirit Vein Control</h2>
-                    <div id="domain-info" class="text-center mb-3">
-                        <p class="text-xs text-gray-400">Current Lord:</p>
-                        <p id="domain-lord" class="font-bold text-white">None</p>
-                        <p class="text-[10px] text-green-500">+50% Qi Generation</p>
-                    </div>
-                    <button onclick="game.claimDomain()" class="w-full py-2 bg-orange-600/20 border border-orange-500 text-orange-500 text-[10px] font-bold rounded hover:bg-orange-600 hover:text-white transition">CLAIM DOMAIN</button>
-                </div>
-
-                <div class="mystic-border p-6 rounded-2xl">
-                    <h2 class="text-sm font-bold uppercase text-purple-400 mb-4 border-b border-purple-900/50 pb-2 text-center">Leaderboard</h2>
-                    <ul id="leaderboard-list" class="space-y-3"></ul>
-                </div>
+            <div class="mystic-border p-6 rounded-2xl">
+                <h2 class="text-sm font-bold uppercase text-purple-400 mb-4 border-b border-purple-900/50 pb-2 text-center">Leaderboard</h2>
+                <ul id="leaderboard-list" class="space-y-3"></ul>
             </div>
         </div>
     </div>
@@ -170,17 +159,16 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const SAVE_KEY = "ImmortalSovereign_V6_Final";
+        const SAVE_KEY = "ImmortalSovereign_V7_Fog";
 
         const game = {
             state: {
                 name: "", qi: 0, realmIdx: 0, age: 18, maxAge: 100,
                 upgrades: { spirit: 0, tech: 0 },
                 karma: 0, rootMult: 1, lastTick: Date.now(),
-                technique: "dao",
-                hasDomain: false
+                technique: "dao", pos: -1
             },
-            domainLord: "None",
+            mapData: Array(25).fill(null).map((_, i) => ({ id: i, lord: null, level: 0, density: 1 + (i % 5 * 0.5) })),
             realms: [
                 "Mortal Body", "Refined Body", "Tempered Flesh", "Bone Forging", "Blood Circulation", "Muscle Cleansing", "Meridian Awakening", "Qi Sense", "Qi Initiation", "Qi Condensation", "Qi Gathering", "Qi Foundation", "Qi Stabilization",
                 "Foundation Establishment", "Foundation Perfection", "Spirit Root Awakening", "Spirit Root Tempering", "Spirit Root Harmonization", "Golden Core (Early)", "Golden Core (Middle)", "Golden Core (Late)", "Golden Core (Perfected)",
@@ -191,23 +179,19 @@
                 "Primordial Body", "Primordial Soul", "Primordial Dao", "Origin Being", "Origin Sovereign", "Origin Emperor",
                 "Void Ancestor", "Chaos Walker", "Chaos Sovereign", "Chaos Emperor", "Existence Transcendent", "Law Devourer", "Reality Shaper", "World Creator", "Multiverse Sovereign", "Omni-Existence", "Beyond Heaven", "Boundless One", "Absolute Apex"
             ].map((n, i) => ({
-                name: n,
-                req: Math.floor(100 * Math.pow(1.68, i)),
-                color: `hsl(${250 + (i * 3)}, 70%, 50%)`,
-                chance: Math.max(0.05, 1 - (i * 0.015))
+                name: n, req: Math.floor(100 * Math.pow(1.68, i)), color: `hsl(${250 + (i * 3)}, 70%, 50%)`, chance: Math.max(0.05, 1 - (i * 0.015))
             })),
 
             init() {
                 const saved = localStorage.getItem(SAVE_KEY);
                 if (saved) this.state = {...this.state, ...JSON.parse(saved)};
                 if (!this.state.name) this.state.name = prompt("Enter your Daoist Name:") || "Unknown";
+                if (this.state.pos === -1) this.state.pos = Math.floor(Math.random() * 25);
                 
                 this.setupNetwork();
                 this.listenToLeaderboard();
-                this.listenToDomain();
-                if (!this.state.techniqueChosen) {
-                   document.getElementById('technique-screen').style.display = 'flex';
-                }
+                this.listenToMap();
+                if (!this.state.techniqueChosen) document.getElementById('technique-screen').style.display = 'flex';
                 setInterval(() => this.tick(), 100);
                 setInterval(() => this.randomEvent(), 45000);
                 this.render();
@@ -217,54 +201,33 @@
                 this.state.technique = type;
                 this.state.techniqueChosen = true;
                 document.getElementById('technique-screen').style.display = 'none';
-                this.addLog(`Adopted the Path of the ${type.toUpperCase()}.`);
                 localStorage.setItem(SAVE_KEY, JSON.stringify(this.state));
             },
 
             tick() {
                 const dt = (Date.now() - this.state.lastTick) / 1000;
                 this.state.lastTick = Date.now();
-                
-                let techRate = 1;
-                if(this.state.technique === 'turtle') techRate = 0.7;
-                if(this.state.technique === 'phoenix') techRate = 2.0;
-
-                // Domain Bonus
-                const domainBonus = (this.domainLord === this.state.name) ? 1.5 : 1.0;
-
-                const rate = (1 + this.state.upgrades.spirit) * (1 + this.state.upgrades.tech * 2) * Math.pow(1.5, this.state.realmIdx) * this.state.rootMult * techRate * domainBonus;
-                const currentReq = this.realms[this.state.realmIdx].req;
-                
-                this.state.qi = Math.min(currentReq, this.state.qi + (rate * dt));
+                let techRate = this.state.technique === 'turtle' ? 0.7 : (this.state.technique === 'phoenix' ? 2.0 : 1.0);
+                const currentTile = this.mapData[this.state.pos];
+                const mapBonus = (currentTile && currentTile.lord === this.state.name) ? currentTile.density : 1.0;
+                const rate = (1 + this.state.upgrades.spirit) * (1 + this.state.upgrades.tech * 2) * Math.pow(1.5, this.state.realmIdx) * this.state.rootMult * techRate * mapBonus;
+                this.state.qi = Math.min(this.realms[this.state.realmIdx].req, this.state.qi + (rate * dt));
                 this.state.age += dt / 60;
-                
                 if (this.state.age >= this.state.maxAge) this.die();
                 this.render(rate);
             },
 
             manualMeditate() {
-                let techRate = 1;
-                if(this.state.technique === 'turtle') techRate = 0.7;
-                if(this.state.technique === 'phoenix') techRate = 2.0;
-                const domainBonus = (this.domainLord === this.state.name) ? 1.5 : 1.0;
-                const power = (10 + (this.state.realmIdx * 50)) * this.state.rootMult * techRate * domainBonus;
+                let techRate = this.state.technique === 'turtle' ? 0.7 : (this.state.technique === 'phoenix' ? 2.0 : 1.0);
+                const currentTile = this.mapData[this.state.pos];
+                const mapBonus = (currentTile && currentTile.lord === this.state.name) ? currentTile.density : 1.0;
+                const power = (10 + (this.state.realmIdx * 50)) * this.state.rootMult * techRate * mapBonus;
                 this.state.qi = Math.min(this.realms[this.state.realmIdx].req, this.state.qi + power);
-            },
-
-            buyUpgrade(type) {
-                const cost = Math.floor((type === 'spirit' ? 10 : 100) * Math.pow(1.8, this.state.upgrades[type]));
-                if (this.state.qi >= cost) {
-                    this.state.qi -= cost;
-                    this.state.upgrades[type]++;
-                }
             },
 
             async breakthrough() {
                 const r = this.realms[this.state.realmIdx];
-                let successMod = 1;
-                if(this.state.technique === 'turtle') successMod = 1.5;
-                if(this.state.technique === 'phoenix') successMod = 0.8;
-
+                let successMod = this.state.technique === 'turtle' ? 1.5 : (this.state.technique === 'phoenix' ? 0.8 : 1.0);
                 document.body.classList.add('strike');
                 setTimeout(() => document.body.classList.remove('strike'), 400);
 
@@ -272,79 +235,87 @@
                     this.state.realmIdx++;
                     this.state.qi = 0;
                     this.state.maxAge += 50;
-                    this.addLog(`<span class="text-yellow-400">★ Breakthrough: ${this.realms[this.state.realmIdx].name}</span>`);
-                    
-                    await setDoc(doc(db, "highscores", this.state.name), { 
-                        player: this.state.name, 
-                        realm: this.realms[this.state.realmIdx].name, 
-                        level: this.state.realmIdx, 
-                        updatedAt: serverTimestamp() 
-                    });
+                    await setDoc(doc(db, "highscores", this.state.name), { player: this.state.name, realm: this.realms[this.state.realmIdx].name, level: this.state.realmIdx, updatedAt: serverTimestamp() });
                 } else {
                     this.state.qi *= 0.5;
-                    this.addLog(`<span class="text-red-500">⚡ Tribulation Failure! Qi scattered.</span>`);
                 }
                 localStorage.setItem(SAVE_KEY, JSON.stringify(this.state));
             },
 
-            async claimDomain() {
-                await setDoc(doc(db, "world", "spirit_vein"), {
-                    lord: this.state.name,
-                    at: serverTimestamp()
-                });
-                this.addLog(`<span class="text-orange-400">⚔ You have claimed the Spirit Vein!</span>`);
+            async occupyTile(id) {
+                const target = this.mapData[id];
+                if (target.lord === this.state.name) return;
+                if (target.lord && this.state.realmIdx < target.level) {
+                    this.addLog(`<span class="text-red-400">❌ Challenge Failed! ${target.lord} is too powerful.</span>`);
+                    return;
+                }
+                await setDoc(doc(db, "map", `tile_${id}`), { lord: this.state.name, level: this.state.realmIdx, density: target.density, at: serverTimestamp() });
+                this.state.pos = id;
+                localStorage.setItem(SAVE_KEY, JSON.stringify(this.state));
             },
 
-            listenToDomain() {
-                onSnapshot(doc(db, "world", "spirit_vein"), (d) => {
-                    if(d.exists()) {
-                        this.domainLord = d.data().lord;
-                        document.getElementById('domain-lord').innerText = this.domainLord;
+            listenToMap() {
+                onSnapshot(query(collection(db, "map")), (sn) => {
+                    sn.forEach(d => {
+                        const id = parseInt(d.id.split('_')[1]);
+                        this.mapData[id] = { ...this.mapData[id], ...d.data() };
+                    });
+                    this.renderMap();
+                });
+            },
+
+            renderMap() {
+                const container = document.getElementById('map-container');
+                container.innerHTML = "";
+                const myRow = Math.floor(this.state.pos / 5);
+                const myCol = this.state.pos % 5;
+
+                this.mapData.forEach(tile => {
+                    const tRow = Math.floor(tile.id / 5);
+                    const tCol = tile.id % 5;
+                    const isVisible = Math.abs(myRow - tRow) <= 1 && Math.abs(myCol - tCol) <= 1;
+                    const isMe = tile.lord === this.state.name;
+                    
+                    const div = document.createElement('div');
+                    div.className = `tile ${isMe ? 'tile-active' : ''} ${!isVisible && !isMe ? 'fog' : (tile.lord ? 'bg-purple-900/20' : 'bg-black/40')}`;
+                    
+                    if (isVisible || isMe) {
+                        div.innerHTML = `<span class="text-gray-500">${tile.density.toFixed(1)}x</span>
+                                         <span class="truncate w-full text-center font-bold" style="color:${tile.lord ? '#a855f7' : '#444'}">${tile.lord || 'Empty'}</span>`;
+                    } else {
+                        div.innerHTML = `<span class="text-gray-700">???</span>`;
                     }
+                    div.onclick = () => this.occupyTile(tile.id);
+                    container.appendChild(div);
                 });
             },
 
             randomEvent() {
                 const modal = document.getElementById('event-modal');
-                const events = [
-                    { t: "Sacred Herb", d: "Consume it?", o1: "Eat (Qi)", o2: "Plant (Karma)", r1: () => this.state.qi += 1000, r2: () => this.state.karma += 100 },
-                    { t: "Daoist Debate", d: "Challenge an Elder?", o1: "Debate (Root Gain)", o2: "Bows (Lifespan)", r1: () => this.state.rootMult += 0.1, r2: () => this.state.maxAge += 10 }
-                ];
-                const e = events[Math.floor(Math.random() * events.length)];
-                document.getElementById('event-title').innerText = e.t;
-                document.getElementById('event-desc').innerText = e.d;
-                document.getElementById('event-opt1').innerText = e.o1;
-                document.getElementById('event-opt2').innerText = e.o2;
+                const e = [{ t: "Sacred Herb", d: "Consume it?", o1: "Eat (Qi)", o2: "Plant (Karma)", r1: () => this.state.qi += 1000, r2: () => this.state.karma += 100 }][0];
+                document.getElementById('event-title').innerText = e.t; document.getElementById('event-desc').innerText = e.d;
+                document.getElementById('event-opt1').innerText = e.o1; document.getElementById('event-opt2').innerText = e.o2;
                 modal.style.display = 'flex';
                 document.getElementById('event-opt1').onclick = () => { e.r1(); modal.style.display = 'none'; };
                 document.getElementById('event-opt2').onclick = () => { e.r2(); modal.style.display = 'none'; };
             },
 
             die() {
-                const gain = this.state.realmIdx * 20;
-                this.state.karma += gain;
+                this.state.karma += this.state.realmIdx * 20;
                 document.getElementById('reincarnation-screen').style.display = 'flex';
                 document.getElementById('death-msg').innerText = `${this.state.name} has died.`;
-                document.getElementById('karma-gain').innerText = gain;
             },
 
             reincarnate(mult, cost) {
                 if (this.state.karma < cost) return alert("Low Karma!");
-                this.state.karma -= cost;
-                this.state.rootMult = mult;
-                this.state.age = 18; this.state.maxAge = 100; this.state.realmIdx = 0; this.state.qi = 0;
-                this.state.upgrades = { spirit: 0, tech: 0 };
-                this.state.techniqueChosen = false;
+                this.state.karma -= cost; this.state.rootMult = mult; this.state.age = 18; this.state.maxAge = 100; this.state.realmIdx = 0; this.state.qi = 0;
+                this.state.upgrades = { spirit: 0, tech: 0 }; this.state.techniqueChosen = false; this.state.pos = Math.floor(Math.random() * 25);
                 document.getElementById('reincarnation-screen').style.display = 'none';
                 document.getElementById('technique-screen').style.display = 'flex';
             },
 
             render(rate = 0) {
                 const r = this.realms[this.state.realmIdx];
-                let successMod = 1;
-                if(this.state.technique === 'turtle') successMod = 1.5;
-                if(this.state.technique === 'phoenix') successMod = 0.8;
-
                 document.getElementById('p-name').innerText = this.state.name;
                 document.getElementById('p-realm').innerText = r.name;
                 document.getElementById('p-tech').innerText = "Path: " + this.state.technique;
@@ -355,11 +326,8 @@
                 document.getElementById('karma').innerText = this.state.karma;
                 document.getElementById('root').innerText = this.state.rootMult.toFixed(1) + "x";
                 document.getElementById('rate-val').innerText = Math.floor(rate).toLocaleString();
-                document.getElementById('success-val').innerText = Math.min(100, (r.chance * successMod * 100)).toFixed(0) + "%";
                 document.documentElement.style.setProperty('--realm-color', r.color);
                 document.getElementById('break-btn').style.display = (this.state.qi >= r.req) ? 'block' : 'none';
-                document.getElementById('cost-spirit').innerText = Math.floor(10 * Math.pow(1.8, this.state.upgrades.spirit)).toLocaleString();
-                document.getElementById('cost-tech').innerText = Math.floor(100 * Math.pow(1.8, this.state.upgrades.tech)).toLocaleString();
             },
 
             addLog(msg) {
@@ -368,27 +336,19 @@
             },
 
             listenToLeaderboard() {
-                const q = query(collection(db, "highscores"), orderBy("level", "desc"), limit(10));
-                onSnapshot(q, (sn) => {
-                    const list = document.getElementById('leaderboard-list');
-                    list.innerHTML = "";
+                onSnapshot(query(collection(db, "highscores"), orderBy("level", "desc"), limit(10)), (sn) => {
+                    const list = document.getElementById('leaderboard-list'); list.innerHTML = "";
                     sn.forEach(d => {
                         const data = d.data();
-                        list.innerHTML += `<li class="p-2 bg-white/5 rounded border-l-2 border-purple-500 text-xs">
-                            <b>${data.player}</b><br><span class="text-yellow-500">${data.realm}</span>
-                        </li>`;
+                        list.innerHTML += `<li class="p-2 bg-white/5 rounded border-l-2 border-purple-500 text-xs"><b>${data.player}</b><br><span class="text-yellow-500">${data.realm}</span></li>`;
                     });
                 });
             },
 
             setupNetwork() {
-                const qMsg = query(collection(db, "messages"), orderBy("createdAt", "desc"), limit(15));
-                onSnapshot(qMsg, (sn) => {
+                onSnapshot(query(collection(db, "messages"), orderBy("createdAt", "desc"), limit(15)), (sn) => {
                     const chat = document.getElementById('chat'); chat.innerHTML = "";
-                    sn.forEach(d => {
-                        const data = d.data();
-                        chat.innerHTML += `<div><b class="text-purple-400">${data.user}</b>: <span class="text-gray-400">${data.text}</span></div>`;
-                    });
+                    sn.forEach(d => { chat.innerHTML += `<div><b class="text-purple-400">${d.data().user}</b>: <span class="text-gray-400">${d.data().text}</span></div>`; });
                 });
                 document.getElementById('chat-form').onsubmit = async (e) => {
                     e.preventDefault();
