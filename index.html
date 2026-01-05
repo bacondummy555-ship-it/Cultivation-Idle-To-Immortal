@@ -170,9 +170,10 @@
                 name: "", qi: 0, realmIdx: 0, age: 18, maxAge: 100,
                 upgrades: { spirit: 0, tech: 0 },
                 karma: 0, rootMult: 1, lastTick: Date.now(),
-                technique: "dao", pos: -1, techniqueChosen: false
+                technique: "dao", pos: -1, techniqueChosen: false,
+                isDead: false, moveCooldown: 0
             },
-            mapData: Array(25).fill(null).map((_, i) => ({ id: i, lord: null, level: 0, density: 1 + (i % 5 * 0.5) })),
+            mapData: Array(25).fill(null).map((_, i) => ({ id: i, lord: null, level: 0, density: 1 + (i % 5 * 0.5), lordQi: 0 })),
             realms: [
                 "Mortal Body", "Refined Body", "Tempered Flesh", "Bone Forging", "Blood Circulation", "Muscle Cleansing", "Meridian Awakening", "Qi Sense", "Qi Initiation", "Qi Condensation", "Qi Gathering", "Qi Foundation", "Qi Stabilization",
                 "Foundation Establishment", "Foundation Perfection", "Spirit Root Awakening", "Spirit Root Tempering", "Spirit Root Harmonization", "Golden Core (Early)", "Golden Core (Middle)", "Golden Core (Late)", "Golden Core (Perfected)",
@@ -188,36 +189,22 @@
 
             init() {
                 const saved = localStorage.getItem(SAVE_KEY);
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    this.state = {...this.state, ...parsed};
-                }
-                
-                if (!this.state.name) {
-                    this.state.name = prompt("Enter your Daoist Name:") || "Anonymous_" + Math.floor(Math.random()*999);
-                }
+                if (saved) this.state = {...this.state, ...JSON.parse(saved)};
+                if (!this.state.name) this.state.name = prompt("Enter your Daoist Name:") || "Daoist_" + Math.floor(Math.random()*999);
                 if (this.state.pos === -1) this.state.pos = Math.floor(Math.random() * 25);
                 
                 this.setupNetwork();
                 this.listenToLeaderboard();
                 this.listenToMap();
-                
-                if (!this.state.techniqueChosen) {
-                    document.getElementById('technique-screen').style.display = 'flex';
-                }
+                if (!this.state.techniqueChosen) document.getElementById('technique-screen').style.display = 'flex';
 
-                // Main Game Loops
                 setInterval(() => this.tick(), 100);
                 setInterval(() => this.randomEvent(), 45000);
-                setInterval(() => this.save(), 5000); // Auto-save every 5s
-
+                setInterval(() => this.save(), 5000);
                 this.render();
-                this.addLog(`<span class="text-purple-400">Welcome, ${this.state.name}. Your path begins.</span>`);
             },
 
-            save() {
-                localStorage.setItem(SAVE_KEY, JSON.stringify(this.state));
-            },
+            save() { localStorage.setItem(SAVE_KEY, JSON.stringify(this.state)); },
 
             setTechnique(type) {
                 this.state.technique = type;
@@ -227,23 +214,23 @@
             },
 
             tick() {
+                if (this.state.isDead) return;
                 const now = Date.now();
                 const dt = (now - this.state.lastTick) / 1000;
                 this.state.lastTick = now;
+
+                if (this.state.moveCooldown > 0) this.state.moveCooldown -= dt;
 
                 let techRate = this.state.technique === 'turtle' ? 0.7 : (this.state.technique === 'phoenix' ? 2.0 : 1.0);
                 const currentTile = this.mapData[this.state.pos];
                 const mapBonus = (currentTile && currentTile.lord === this.state.name) ? currentTile.density : 1.0;
                 
-                const baseRate = (1 + this.state.upgrades.spirit) * (1 + this.state.upgrades.tech * 2);
-                const rate = baseRate * Math.pow(1.5, this.state.realmIdx) * this.state.rootMult * techRate * mapBonus;
-                
+                const rate = (1 + this.state.upgrades.spirit) * Math.pow(1.5, this.state.realmIdx) * this.state.rootMult * techRate * mapBonus;
                 const targetReq = this.realms[this.state.realmIdx].req;
                 this.state.qi = Math.min(targetReq, this.state.qi + (rate * dt));
                 
                 this.state.age += dt / 60;
                 if (this.state.age >= this.state.maxAge) this.die();
-                
                 this.render(rate);
             },
 
@@ -252,9 +239,7 @@
                 const currentTile = this.mapData[this.state.pos];
                 const mapBonus = (currentTile && currentTile.lord === this.state.name) ? currentTile.density : 1.0;
                 const power = (10 + (this.state.realmIdx * 50)) * this.state.rootMult * techRate * mapBonus;
-                
-                const targetReq = this.realms[this.state.realmIdx].req;
-                this.state.qi = Math.min(targetReq, this.state.qi + power);
+                this.state.qi = Math.min(this.realms[this.state.realmIdx].req, this.state.qi + power);
                 this.render();
             },
 
@@ -270,12 +255,9 @@
                     this.state.realmIdx++;
                     this.state.qi = 0;
                     this.state.maxAge += 50;
-                    this.addLog(`<span class="text-green-400 font-bold">SUCCESS! You have ascended to ${this.realms[this.state.realmIdx].name}!</span>`);
+                    this.addLog(`<span class="text-green-400 font-bold">SUCCESS! You are now a ${this.realms[this.state.realmIdx].name}!</span>`);
                     await setDoc(doc(db, "highscores", this.state.name), { 
-                        player: this.state.name, 
-                        realm: this.realms[this.state.realmIdx].name, 
-                        level: this.state.realmIdx, 
-                        updatedAt: serverTimestamp() 
+                        player: this.state.name, realm: this.realms[this.state.realmIdx].name, level: this.state.realmIdx, updatedAt: serverTimestamp() 
                     });
                 } else {
                     this.state.qi *= 0.5;
@@ -286,32 +268,48 @@
             },
 
             async occupyTile(id) {
+                if (this.state.moveCooldown > 0) return this.addLog(`<span class="text-orange-400">Qi unstable! Wait ${Math.ceil(this.state.moveCooldown)}s.</span>`);
+                
                 const target = this.mapData[id];
-                const myRow = Math.floor(this.state.pos / 5);
-                const myCol = this.state.pos % 5;
-                const tRow = Math.floor(id / 5);
-                const tCol = id % 5;
+                const myRow = Math.floor(this.state.pos / 5); const myCol = this.state.pos % 5;
+                const tRow = Math.floor(id / 5); const tCol = id % 5;
                 
-                // Can only move to neighbors
                 if (Math.abs(myRow - tRow) > 1 || Math.abs(myCol - tCol) > 1) return;
-
                 if (target.lord === this.state.name) return;
-                
-                if (target.lord && this.state.realmIdx < target.level) {
-                    this.addLog(`<span class="text-red-400">❌ Challenge Failed! ${target.lord} (${this.realms[target.level].name}) is too powerful for you.</span>`);
-                    return;
+
+                // BATTLE LOGIC
+                if (target.lord) {
+                    this.addLog(`⚔️ Challenging ${target.lord}...`);
+                    let win = false;
+                    if (this.state.realmIdx > target.level) win = true;
+                    else if (this.state.realmIdx === target.level && this.state.qi > (target.lordQi || 0)) win = true;
+
+                    if (!win) {
+                        this.state.qi *= 0.7; // Qi Shock
+                        this.state.moveCooldown = 5;
+                        this.triggerFlash('red');
+                        return this.addLog(`<span class="text-red-500 font-bold">BATTLE LOST! ${target.lord} suppressed your Dao.</span>`);
+                    }
+                    this.triggerFlash('gold');
+                    this.addLog(`<span class="text-yellow-400 font-bold">BATTLE WON! You drove ${target.lord} away.</span>`);
                 }
-                
+
                 await setDoc(doc(db, "map", `tile_${id}`), { 
                     lord: this.state.name, 
                     level: this.state.realmIdx, 
+                    lordQi: this.state.qi,
                     density: target.density, 
                     at: serverTimestamp() 
                 });
-                
                 this.state.pos = id;
-                this.addLog(`<span class="text-cyan-400">You have occupied a new spiritual vein (${target.density}x).</span>`);
                 this.save();
+            },
+
+            triggerFlash(color) {
+                const overlay = document.createElement('div');
+                overlay.className = `fixed inset-0 z-[100] pointer-events-none opacity-30 ${color === 'red' ? 'bg-red-600' : 'bg-yellow-500'}`;
+                document.body.appendChild(overlay);
+                setTimeout(() => overlay.remove(), 250);
             },
 
             listenToMap() {
@@ -327,25 +325,19 @@
             renderMap() {
                 const container = document.getElementById('map-container');
                 container.innerHTML = "";
-                const myRow = Math.floor(this.state.pos / 5);
-                const myCol = this.state.pos % 5;
+                const myRow = Math.floor(this.state.pos / 5); const myCol = this.state.pos % 5;
 
                 this.mapData.forEach(tile => {
-                    const tRow = Math.floor(tile.id / 5);
-                    const tCol = tile.id % 5;
+                    const tRow = Math.floor(tile.id / 5); const tCol = tile.id % 5;
                     const isVisible = Math.abs(myRow - tRow) <= 1 && Math.abs(myCol - tCol) <= 1;
-                    const isMe = tile.id === this.state.pos;
-                    
                     const div = document.createElement('div');
-                    div.className = `tile ${isMe ? 'tile-active' : ''} ${!isVisible ? 'fog' : (tile.lord ? 'bg-purple-900/30' : 'bg-black/40')}`;
+                    div.className = `tile ${tile.id === this.state.pos ? 'tile-active' : ''} ${!isVisible ? 'fog' : (tile.lord ? 'bg-purple-900/30' : 'bg-black/40')}`;
                     
                     if (isVisible) {
                         div.innerHTML = `<span class="text-gray-500 font-mono">${tile.density.toFixed(1)}x</span>
                                          <span class="truncate w-full px-1 text-center font-bold" style="color:${tile.lord ? '#a855f7' : '#444'}">${tile.lord || 'Empty'}</span>`;
                         div.onclick = () => this.occupyTile(tile.id);
-                    } else {
-                        div.innerHTML = `<span class="text-gray-800">???</span>`;
-                    }
+                    } else { div.innerHTML = `<span class="text-gray-800">???</span>`; }
                     container.appendChild(div);
                 });
             },
@@ -353,30 +345,29 @@
             randomEvent() {
                 const modal = document.getElementById('event-modal');
                 const events = [
-                    { t: "Sacred Herb", d: "You find a glowing herb in the mist. Consume it?", o1: "Refine it (Qi)", o2: "Plant it (Karma)", r1: () => this.state.qi += (this.realms[this.state.realmIdx].req * 0.1), r2: () => this.state.karma += 50 },
-                    { t: "Ancient Tablet", d: "A crumbling stone tablet holds forgotten secrets.", o1: "Study (Qi)", o2: "Transcribe (Karma)", r1: () => this.state.qi += (this.realms[this.state.realmIdx].req * 0.15), r2: () => this.state.karma += 30 }
+                    { t: "Sacred Herb", d: "You find a glowing herb. Consume it?", o1: "Refine (Qi)", o2: "Plant (Karma)", r1: () => this.state.qi += (this.realms[this.state.realmIdx].req * 0.1), r2: () => this.state.karma += 50 },
+                    { t: "Ancient Tablet", d: "A crumbling stone tablet holds secrets.", o1: "Study (Qi)", o2: "Transcribe (Karma)", r1: () => this.state.qi += (this.realms[this.state.realmIdx].req * 0.15), r2: () => this.state.karma += 30 }
                 ];
                 const e = events[Math.floor(Math.random()*events.length)];
-                
                 document.getElementById('event-title').innerText = e.t; 
                 document.getElementById('event-desc').innerText = e.d;
                 document.getElementById('event-opt1').innerText = e.o1; 
                 document.getElementById('event-opt2').innerText = e.o2;
-                
                 modal.style.display = 'flex';
                 document.getElementById('event-opt1').onclick = () => { e.r1(); modal.style.display = 'none'; this.render(); };
                 document.getElementById('event-opt2').onclick = () => { e.r2(); modal.style.display = 'none'; this.render(); };
             },
 
             die() {
+                this.state.isDead = true;
                 this.state.karma += this.state.realmIdx * 20;
                 document.getElementById('karma-gain').innerText = this.state.realmIdx * 20;
                 document.getElementById('reincarnation-screen').style.display = 'flex';
-                document.getElementById('death-msg').innerText = `${this.state.name} has exhausted their lifespan as a ${this.realms[this.state.realmIdx].name}.`;
+                document.getElementById('death-msg').innerText = `${this.state.name} has returned to the earth.`;
             },
 
             reincarnate(mult, cost) {
-                if (this.state.karma < cost) return alert("You lack the Karma for this rebirth!");
+                if (this.state.karma < cost) return alert("Insufficient Karma!");
                 this.state.karma -= cost; 
                 this.state.rootMult = mult; 
                 this.state.age = 18; 
@@ -386,17 +377,15 @@
                 this.state.upgrades = { spirit: 0, tech: 0 }; 
                 this.state.techniqueChosen = false; 
                 this.state.pos = Math.floor(Math.random() * 25);
-                
+                this.state.isDead = false;
                 document.getElementById('reincarnation-screen').style.display = 'none';
                 document.getElementById('technique-screen').style.display = 'flex';
                 this.save();
-                this.addLog(`<span class="text-yellow-400 font-bold">--- A NEW LIFE BEGINS ---</span>`);
             },
 
             render(rate = 0) {
                 const r = this.realms[this.state.realmIdx];
                 let successMod = this.state.technique === 'turtle' ? 1.5 : (this.state.technique === 'phoenix' ? 0.8 : 1.0);
-                
                 document.getElementById('p-name').innerText = this.state.name;
                 document.getElementById('p-realm').innerText = r.name;
                 document.getElementById('p-tech').innerText = "Path: " + this.state.technique;
@@ -408,7 +397,6 @@
                 document.getElementById('root').innerText = this.state.rootMult.toFixed(1) + "x";
                 document.getElementById('rate-val').innerText = Math.floor(rate).toLocaleString();
                 document.getElementById('success-val').innerText = (r.chance * successMod * 100).toFixed(0) + "%";
-                
                 document.documentElement.style.setProperty('--realm-color', r.color);
                 document.getElementById('break-btn').style.display = (this.state.qi >= r.req) ? 'block' : 'none';
             },
@@ -441,22 +429,14 @@
                     const chat = document.getElementById('chat'); 
                     chat.innerHTML = "";
                     sn.forEach(d => { 
-                        chat.innerHTML += `<div class="bg-white/5 p-2 rounded-lg">
-                            <b class="text-purple-400 font-bold">${d.data().user}</b>: 
-                            <span class="text-gray-300">${d.data().text}</span>
-                        </div>`; 
+                        chat.innerHTML += `<div class="bg-white/5 p-2 rounded-lg"><b class="text-purple-400 font-bold">${d.data().user}</b>: <span class="text-gray-300">${d.data().text}</span></div>`; 
                     });
                 });
-
                 document.getElementById('chat-form').onsubmit = async (e) => {
                     e.preventDefault();
                     const input = document.getElementById('chat-input');
                     if (!input.value.trim()) return;
-                    await addDoc(collection(db, "messages"), { 
-                        user: this.state.name, 
-                        text: input.value, 
-                        createdAt: serverTimestamp() 
-                    });
+                    await addDoc(collection(db, "messages"), { user: this.state.name, text: input.value, createdAt: serverTimestamp() });
                     input.value = "";
                 };
             }
