@@ -13,6 +13,50 @@
         @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
         .meditate-anim { animation: float 3s ease-in-out infinite; }
     </style>
+    <script type="module">
+    // 1. IMPORT FIREBASE
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // 2. PASTE YOUR CONFIG HERE
+    const firebaseConfig = {
+        apiKey: "AIzaSyD7N-ZUGKm9hasgM0DD08scouydEEuiLvU",
+        authDomain: "path-to-immortality-78ad8.firebaseapp.com",
+        projectId: "path-to-immortality-78ad8",
+        storageBucket: "path-to-immortality-78ad8.firebasestorage.app",
+        messagingSenderId: "653760996266",
+        appId: "1:653760996266:web:59c8dc7158cba0722e01d3"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // 3. LEADERBOARD LOGIC
+    async function saveToLeaderboard(name, realm) {
+        await addDoc(collection(db, "highscores"), {
+            player: name,
+            realm: realm,
+            date: Date.now()
+        });
+        loadLeaderboard();
+    }
+
+    async function loadLeaderboard() {
+        const q = query(collection(db, "highscores"), orderBy("date", "desc"), limit(5));
+        const querySnapshot = await getDocs(q);
+        let html = "";
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            html += `<li>${data.player} - <span class="text-purple-400">${data.realm}</span></li>`;
+        });
+        document.getElementById('leaderboard-list').innerHTML = html;
+    }
+
+    // 4. PARTICLE SYSTEM (VISUALS)
+    const canvas = document.getElementById('particleCanvas');
+    const ctx = canvas.getContext('2d');
+    // ... (Insert the Particle class code from previous response here)
+</script>
 </head>
 <body class="p-4 md:p-8">
     <div class="max-w-4xl mx-auto">
