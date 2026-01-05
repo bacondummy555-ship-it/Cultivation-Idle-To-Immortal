@@ -7,20 +7,24 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --realm-color: #4c1d95; --glow: rgba(139, 92, 246, 0.5); }
-        body { background-color: #050507; color: #e2e8f0; font-family: 'Georgia', serif; overflow-x: hidden; }
-        .qi-gradient { background: linear-gradient(90deg, var(--realm-color), #fff); box-shadow: 0 0 20px var(--realm-color); }
-        .mystic-border { border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 0 20px rgba(0,0,0,0.5); background: rgba(15, 15, 20, 0.8); backdrop-filter: blur(10px); }
+        body { background-color: #050507; color: #e2e8f0; font-family: 'Georgia', serif; overflow-x: hidden; scroll-behavior: smooth; }
+        .qi-gradient { background: linear-gradient(90deg, var(--realm-color), #fff); box-shadow: 0 0 20px var(--realm-color); transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .mystic-border { border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 0 20px rgba(0,0,0,0.5); background: rgba(15, 15, 20, 0.8); backdrop-filter: blur(10px); transition: all 0.3s ease; }
+        .mystic-border:hover { border-color: var(--realm-color); }
         
-        @keyframes shake { 0%, 100% { transform: translate(0,0); } 25% { transform: translate(-5px,5px); } 50% { transform: translate(5px,-5px); } }
-        .strike { animation: shake 0.2s ease-in-out 3; background: white !important; }
+        @keyframes shake { 0%, 100% { transform: translate(0,0); } 25% { transform: translate(-2px,2px); } 50% { transform: translate(2px,-2px); } }
+        .strike { animation: shake 0.1s ease-in-out infinite; background: white !important; }
         .float { animation: float 4s ease-in-out infinite; }
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
         .map-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
-        .tile { aspect-ratio: 1; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 8px; transition: all 0.2s; position: relative; overflow: hidden; }
-        .tile:hover { background: rgba(255,255,255,0.1); }
-        .tile-active { border: 1px solid #a855f7; box-shadow: inset 0 0 10px #a855f7; z-index: 10; }
-        .fog { background: #111 !important; color: #333 !important; cursor: help; }
+        .tile { aspect-ratio: 1; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 8px; transition: all 0.2s; position: relative; overflow: hidden; border-radius: 4px; }
+        .tile:hover { background: rgba(255,255,255,0.15); filter: brightness(1.2); }
+        .tile-active { border: 1px solid #a855f7; box-shadow: inset 0 0 10px #a855f7; z-index: 10; transform: scale(1.05); }
+        .fog { background: #0a0a0a !important; color: #1a1a1a !important; cursor: not-allowed; }
+
+        #log div { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
 
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: var(--realm-color); border-radius: 10px; }
@@ -28,14 +32,14 @@
 </head>
 <body class="p-4 transition-colors duration-1000">
 
-    <div id="technique-screen" class="fixed inset-0 bg-black/95 z-[60] hidden flex-col items-center justify-center p-6 text-center">
-        <h2 class="text-4xl font-bold text-purple-500 mb-2">Choose Your Technique</h2>
+    <div id="technique-screen" class="fixed inset-0 bg-black/95 z-[60] hidden flex-col items-center justify-center p-6 text-center backdrop-blur-md">
+        <h2 class="text-4xl font-bold text-purple-500 mb-2 tracking-tighter">Choose Your Technique</h2>
         <p class="text-gray-400 mb-8 italic text-sm">This path will define your current incarnation.</p>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl">
             <div class="mystic-border p-6 rounded-2xl hover:border-blue-500 transition cursor-pointer" onclick="game.setTechnique('turtle')">
                 <h3 class="text-blue-400 font-bold text-xl mb-2">Steady Turtle</h3>
                 <p class="text-xs text-gray-500 mb-4">Focus on safety. Higher breakthrough chance, but slower Qi absorption.</p>
-                <div class="text-green-400 text-sm">+50% Success Rate</div>
+                <div class="text-green-400 text-sm font-bold">+50% Success Rate</div>
                 <div class="text-red-400 text-sm">-30% Qi Speed</div>
             </div>
             <div class="mystic-border p-6 rounded-2xl hover:border-yellow-500 transition cursor-pointer" onclick="game.setTechnique('dao')">
@@ -47,99 +51,99 @@
             <div class="mystic-border p-6 rounded-2xl hover:border-red-600 transition cursor-pointer" onclick="game.setTechnique('phoenix')">
                 <h3 class="text-red-500 font-bold text-xl mb-2">Raging Phoenix</h3>
                 <p class="text-xs text-gray-500 mb-4">High risk, high reward. Rapid growth but the heavens are cruel.</p>
-                <div class="text-green-400 text-sm">+100% Qi Speed</div>
+                <div class="text-green-400 text-sm font-bold">+100% Qi Speed</div>
                 <div class="text-red-400 text-sm">-20% Success Rate</div>
             </div>
         </div>
     </div>
 
     <div id="reincarnation-screen" class="fixed inset-0 bg-black z-50 hidden flex-col items-center justify-center p-6 text-center">
-        <h2 class="text-6xl font-bold text-yellow-500 mb-4">Life Exhausted</h2>
+        <h2 class="text-6xl font-bold text-yellow-500 mb-4 drop-shadow-2xl">Life Exhausted</h2>
         <p class="text-xl text-gray-400 mb-8 italic" id="death-msg"></p>
         <div class="text-2xl mb-8">Karma Earned: <span id="karma-gain" class="text-green-400 font-bold">0</span></div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
-            <button onclick="game.reincarnate(1, 0)" class="p-4 border border-gray-700 hover:border-purple-500 rounded-xl">Mortal Root (1x) - 0 K</button>
-            <button onclick="game.reincarnate(3, 200)" class="p-4 border border-gray-700 hover:border-purple-500 rounded-xl">Earth Root (3x) - 200 K</button>
-            <button onclick="game.reincarnate(10, 1000)" class="p-4 border border-gray-700 hover:border-purple-500 rounded-xl">Heavenly Root (10x) - 1000 K</button>
-            <button onclick="game.reincarnate(50, 5000)" class="p-4 border border-gray-700 hover:border-purple-500 rounded-xl">Divine Root (50x) - 5000 K</button>
+            <button onclick="game.reincarnate(1, 0)" class="p-4 border border-gray-700 hover:border-purple-500 rounded-xl transition-all">Mortal Root (1x) - 0 K</button>
+            <button onclick="game.reincarnate(3, 200)" class="p-4 border border-gray-700 hover:border-purple-500 rounded-xl transition-all">Earth Root (3x) - 200 K</button>
+            <button onclick="game.reincarnate(10, 1000)" class="p-4 border border-gray-700 hover:border-purple-500 rounded-xl transition-all">Heavenly Root (10x) - 1000 K</button>
+            <button onclick="game.reincarnate(50, 5000)" class="p-4 border border-gray-700 hover:border-purple-500 rounded-xl transition-all">Divine Root (50x) - 5000 K</button>
         </div>
     </div>
 
-    <div id="event-modal" class="fixed inset-0 bg-black/80 z-40 hidden items-center justify-center p-4">
+    <div id="event-modal" class="fixed inset-0 bg-black/80 z-40 hidden items-center justify-center p-4 backdrop-blur-sm">
         <div class="mystic-border p-8 rounded-3xl max-w-md text-center border-t-4 border-yellow-500">
-            <h3 id="event-title" class="text-2xl font-bold mb-4 text-yellow-500"></h3>
+            <h3 id="event-title" class="text-2xl font-bold mb-4 text-yellow-500 uppercase tracking-widest"></h3>
             <p id="event-desc" class="text-gray-300 mb-6"></p>
             <div class="flex flex-col gap-3">
-                <button id="event-opt1" class="bg-purple-900/50 p-3 rounded-lg hover:bg-purple-800 transition"></button>
-                <button id="event-opt2" class="bg-blue-900/50 p-3 rounded-lg hover:bg-blue-800 transition"></button>
+                <button id="event-opt1" class="bg-purple-900/50 p-3 rounded-lg hover:bg-purple-800 transition font-bold"></button>
+                <button id="event-opt2" class="bg-blue-900/50 p-3 rounded-lg hover:bg-blue-800 transition font-bold"></button>
             </div>
         </div>
     </div>
 
     <div class="max-w-7xl mx-auto">
         <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-            <div>
+            <div class="text-center md:text-left">
                 <h1 class="text-4xl font-black uppercase tracking-widest text-white">Daoist <span id="p-name" class="text-purple-500">...</span></h1>
-                <p id="p-realm" class="text-yellow-500 font-bold text-xl uppercase">Mortal</p>
-                <p id="p-tech" class="text-[10px] text-gray-400 tracking-tighter italic uppercase"></p>
+                <p id="p-realm" class="text-yellow-500 font-bold text-xl uppercase tracking-wider drop-shadow-[0_0_5px_rgba(234,179,8,0.5)]">Mortal</p>
+                <p id="p-tech" class="text-[10px] text-gray-400 tracking-tighter italic uppercase mt-1 opacity-60"></p>
             </div>
-            <div class="flex gap-8 text-center bg-gray-900/50 p-4 rounded-2xl border border-white/5">
-                <div><p class="text-[10px] text-gray-500 uppercase">Lifespan</p><p class="font-mono text-lg"><span id="age">18</span>/<span id="maxAge">100</span></p></div>
-                <div><p class="text-[10px] text-gray-500 uppercase">Karma</p><p id="karma" class="font-mono text-lg text-green-400">0</p></div>
-                <div><p class="text-[10px] text-gray-500 uppercase">Root</p><p id="root" class="font-mono text-lg text-cyan-400">1x</p></div>
+            <div class="flex gap-8 text-center bg-gray-900/50 p-4 rounded-2xl border border-white/5 shadow-inner">
+                <div><p class="text-[10px] text-gray-500 uppercase font-bold">Lifespan</p><p class="font-mono text-lg"><span id="age">18</span>/<span id="maxAge">100</span></p></div>
+                <div><p class="text-[10px] text-gray-500 uppercase font-bold">Karma</p><p id="karma" class="font-mono text-lg text-green-400">0</p></div>
+                <div><p class="text-[10px] text-gray-500 uppercase font-bold">Root</p><p id="root" class="font-mono text-lg text-cyan-400">1x</p></div>
             </div>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <div class="space-y-6">
                 <div class="mystic-border p-6 rounded-2xl">
-                    <h2 class="text-sm font-bold uppercase text-gray-500 mb-4">Qi Reservoir</h2>
-                    <div class="text-4xl font-mono font-bold mb-2" id="qi-val">0</div>
-                    <div class="w-full bg-black/50 h-2 rounded-full overflow-hidden">
-                        <div id="qi-bar" class="qi-gradient h-full transition-all duration-300"></div>
+                    <h2 class="text-sm font-bold uppercase text-gray-500 mb-4 flex justify-between">Qi Reservoir <span id="success-val" class="text-green-500">100%</span></h2>
+                    <div class="text-4xl font-mono font-bold mb-2 tracking-tighter" id="qi-val">0</div>
+                    <div class="w-full bg-black/50 h-3 rounded-full overflow-hidden border border-white/5">
+                        <div id="qi-bar" class="qi-gradient h-full"></div>
                     </div>
-                    <div class="flex justify-between text-[10px] mt-2 text-gray-500">
-                        <span>Rate: <b id="rate-val">0</b>/s</span>
-                        <span>Success: <b id="success-val">100%</b></span>
+                    <div class="flex justify-between text-[10px] mt-2 text-gray-500 font-bold">
+                        <span>Rate: <b id="rate-val" class="text-gray-300 font-mono">0</b>/s</span>
+                        <span id="p-tech-display"></span>
                     </div>
                 </div>
 
                 <div class="mystic-border p-4 rounded-2xl">
-                    <h2 class="text-[10px] font-bold uppercase text-purple-400 mb-2">World Map (Fog Active)</h2>
+                    <h2 class="text-[10px] font-bold uppercase text-purple-400 mb-2 flex justify-between">World Map <span>(Fog Active)</span></h2>
                     <div id="map-container" class="map-grid"></div>
-                    <p class="text-[8px] mt-2 text-gray-500 text-center italic">Only neighbors are visible.</p>
+                    <p class="text-[8px] mt-2 text-gray-500 text-center italic">Only neighbors are visible. Click to occupy.</p>
                 </div>
             </div>
 
             <div class="lg:col-span-2 space-y-6">
                 <div class="mystic-border h-80 rounded-3xl flex flex-col items-center justify-center relative overflow-hidden bg-gradient-to-b from-transparent to-purple-950/20">
                     <div class="float relative z-10">
-                        <button onclick="game.manualMeditate()" class="w-40 h-40 rounded-full border-4 border-purple-500/30 flex items-center justify-center bg-black/40 hover:scale-105 active:scale-95 transition-all shadow-[0_0_50px_var(--realm-color)]">
-                            <span class="font-black tracking-tighter text-xl">MEDITATE</span>
+                        <button onclick="game.manualMeditate()" class="w-40 h-40 rounded-full border-4 border-purple-500/30 flex items-center justify-center bg-black/40 hover:scale-105 active:scale-95 transition-all shadow-[0_0_50px_var(--realm-color)] group">
+                            <span class="font-black tracking-tighter text-xl group-hover:text-purple-400 transition-colors">MEDITATE</span>
                         </button>
                     </div>
-                    <button id="break-btn" onclick="game.breakthrough()" class="hidden absolute bottom-6 w-3/4 bg-yellow-500 text-black font-black py-3 rounded-lg animate-pulse shadow-lg">FACING TRIBULATION</button>
+                    <button id="break-btn" onclick="game.breakthrough()" class="hidden absolute bottom-6 w-3/4 bg-yellow-500 text-black font-black py-4 rounded-lg animate-pulse shadow-xl hover:bg-yellow-400 transition-colors uppercase tracking-widest z-20">FACING TRIBULATION</button>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="mystic-border p-4 rounded-2xl bg-black/20 h-64 overflow-hidden flex flex-col">
                         <h3 class="text-[10px] font-bold text-gray-600 uppercase mb-2">Daoist Records</h3>
-                        <div id="log" class="flex-grow overflow-y-auto text-[11px] space-y-1 font-mono text-gray-400"></div>
+                        <div id="log" class="flex-grow overflow-y-auto text-[11px] space-y-2 font-mono text-gray-400 pr-2"></div>
                     </div>
                     <div class="mystic-border p-4 rounded-2xl flex flex-col h-64">
                         <h2 class="text-[10px] font-bold uppercase text-gray-600 mb-2">World Transmission</h2>
-                        <div id="chat" class="flex-grow overflow-y-auto space-y-2 mb-2 text-xs"></div>
-                        <form id="chat-form" class="flex gap-2">
-                            <input id="chat-input" type="text" class="bg-black/50 border border-white/10 rounded p-1 flex-grow outline-none text-xs">
-                            <button class="bg-purple-600 px-2 rounded font-bold text-[10px]">SEND</button>
+                        <div id="chat" class="flex-grow overflow-y-auto space-y-2 mb-2 text-xs pr-2"></div>
+                        <form id="chat-form" class="flex gap-2 pt-2 border-t border-white/5">
+                            <input id="chat-input" type="text" placeholder="Speak to the world..." class="bg-black/50 border border-white/10 rounded-lg p-2 flex-grow outline-none text-xs focus:border-purple-500 transition-all">
+                            <button class="bg-purple-600 px-4 rounded-lg font-bold text-[10px] hover:bg-purple-500 transition-colors">SEND</button>
                         </form>
                     </div>
                 </div>
             </div>
 
-            <div class="mystic-border p-6 rounded-2xl">
-                <h2 class="text-sm font-bold uppercase text-purple-400 mb-4 border-b border-purple-900/50 pb-2 text-center">Leaderboard</h2>
-                <ul id="leaderboard-list" class="space-y-3"></ul>
+            <div class="mystic-border p-6 rounded-2xl flex flex-col h-full max-h-[700px]">
+                <h2 class="text-sm font-bold uppercase text-purple-400 mb-4 border-b border-purple-900/50 pb-2 text-center">Heavenly Rankings</h2>
+                <ul id="leaderboard-list" class="space-y-3 overflow-y-auto pr-2"></ul>
             </div>
         </div>
     </div>
@@ -166,7 +170,7 @@
                 name: "", qi: 0, realmIdx: 0, age: 18, maxAge: 100,
                 upgrades: { spirit: 0, tech: 0 },
                 karma: 0, rootMult: 1, lastTick: Date.now(),
-                technique: "dao", pos: -1
+                technique: "dao", pos: -1, techniqueChosen: false
             },
             mapData: Array(25).fill(null).map((_, i) => ({ id: i, lord: null, level: 0, density: 1 + (i % 5 * 0.5) })),
             realms: [
@@ -184,36 +188,62 @@
 
             init() {
                 const saved = localStorage.getItem(SAVE_KEY);
-                if (saved) this.state = {...this.state, ...JSON.parse(saved)};
-                if (!this.state.name) this.state.name = prompt("Enter your Daoist Name:") || "Unknown";
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    this.state = {...this.state, ...parsed};
+                }
+                
+                if (!this.state.name) {
+                    this.state.name = prompt("Enter your Daoist Name:") || "Anonymous_" + Math.floor(Math.random()*999);
+                }
                 if (this.state.pos === -1) this.state.pos = Math.floor(Math.random() * 25);
                 
                 this.setupNetwork();
                 this.listenToLeaderboard();
                 this.listenToMap();
-                if (!this.state.techniqueChosen) document.getElementById('technique-screen').style.display = 'flex';
+                
+                if (!this.state.techniqueChosen) {
+                    document.getElementById('technique-screen').style.display = 'flex';
+                }
+
+                // Main Game Loops
                 setInterval(() => this.tick(), 100);
                 setInterval(() => this.randomEvent(), 45000);
+                setInterval(() => this.save(), 5000); // Auto-save every 5s
+
                 this.render();
+                this.addLog(`<span class="text-purple-400">Welcome, ${this.state.name}. Your path begins.</span>`);
+            },
+
+            save() {
+                localStorage.setItem(SAVE_KEY, JSON.stringify(this.state));
             },
 
             setTechnique(type) {
                 this.state.technique = type;
                 this.state.techniqueChosen = true;
                 document.getElementById('technique-screen').style.display = 'none';
-                localStorage.setItem(SAVE_KEY, JSON.stringify(this.state));
+                this.save();
             },
 
             tick() {
-                const dt = (Date.now() - this.state.lastTick) / 1000;
-                this.state.lastTick = Date.now();
+                const now = Date.now();
+                const dt = (now - this.state.lastTick) / 1000;
+                this.state.lastTick = now;
+
                 let techRate = this.state.technique === 'turtle' ? 0.7 : (this.state.technique === 'phoenix' ? 2.0 : 1.0);
                 const currentTile = this.mapData[this.state.pos];
                 const mapBonus = (currentTile && currentTile.lord === this.state.name) ? currentTile.density : 1.0;
-                const rate = (1 + this.state.upgrades.spirit) * (1 + this.state.upgrades.tech * 2) * Math.pow(1.5, this.state.realmIdx) * this.state.rootMult * techRate * mapBonus;
-                this.state.qi = Math.min(this.realms[this.state.realmIdx].req, this.state.qi + (rate * dt));
+                
+                const baseRate = (1 + this.state.upgrades.spirit) * (1 + this.state.upgrades.tech * 2);
+                const rate = baseRate * Math.pow(1.5, this.state.realmIdx) * this.state.rootMult * techRate * mapBonus;
+                
+                const targetReq = this.realms[this.state.realmIdx].req;
+                this.state.qi = Math.min(targetReq, this.state.qi + (rate * dt));
+                
                 this.state.age += dt / 60;
                 if (this.state.age >= this.state.maxAge) this.die();
+                
                 this.render(rate);
             },
 
@@ -222,36 +252,66 @@
                 const currentTile = this.mapData[this.state.pos];
                 const mapBonus = (currentTile && currentTile.lord === this.state.name) ? currentTile.density : 1.0;
                 const power = (10 + (this.state.realmIdx * 50)) * this.state.rootMult * techRate * mapBonus;
-                this.state.qi = Math.min(this.realms[this.state.realmIdx].req, this.state.qi + power);
+                
+                const targetReq = this.realms[this.state.realmIdx].req;
+                this.state.qi = Math.min(targetReq, this.state.qi + power);
+                this.render();
             },
 
             async breakthrough() {
                 const r = this.realms[this.state.realmIdx];
                 let successMod = this.state.technique === 'turtle' ? 1.5 : (this.state.technique === 'phoenix' ? 0.8 : 1.0);
+                const finalChance = r.chance * successMod;
+
                 document.body.classList.add('strike');
                 setTimeout(() => document.body.classList.remove('strike'), 400);
 
-                if (Math.random() <= (r.chance * successMod)) {
+                if (Math.random() <= finalChance) {
                     this.state.realmIdx++;
                     this.state.qi = 0;
                     this.state.maxAge += 50;
-                    await setDoc(doc(db, "highscores", this.state.name), { player: this.state.name, realm: this.realms[this.state.realmIdx].name, level: this.state.realmIdx, updatedAt: serverTimestamp() });
+                    this.addLog(`<span class="text-green-400 font-bold">SUCCESS! You have ascended to ${this.realms[this.state.realmIdx].name}!</span>`);
+                    await setDoc(doc(db, "highscores", this.state.name), { 
+                        player: this.state.name, 
+                        realm: this.realms[this.state.realmIdx].name, 
+                        level: this.state.realmIdx, 
+                        updatedAt: serverTimestamp() 
+                    });
                 } else {
                     this.state.qi *= 0.5;
+                    this.addLog(`<span class="text-red-500 font-bold">FAILURE! The heavens reject you. Qi dispersed!</span>`);
                 }
-                localStorage.setItem(SAVE_KEY, JSON.stringify(this.state));
+                this.save();
+                this.render();
             },
 
             async occupyTile(id) {
                 const target = this.mapData[id];
+                const myRow = Math.floor(this.state.pos / 5);
+                const myCol = this.state.pos % 5;
+                const tRow = Math.floor(id / 5);
+                const tCol = id % 5;
+                
+                // Can only move to neighbors
+                if (Math.abs(myRow - tRow) > 1 || Math.abs(myCol - tCol) > 1) return;
+
                 if (target.lord === this.state.name) return;
+                
                 if (target.lord && this.state.realmIdx < target.level) {
-                    this.addLog(`<span class="text-red-400">❌ Challenge Failed! ${target.lord} is too powerful.</span>`);
+                    this.addLog(`<span class="text-red-400">❌ Challenge Failed! ${target.lord} (${this.realms[target.level].name}) is too powerful for you.</span>`);
                     return;
                 }
-                await setDoc(doc(db, "map", `tile_${id}`), { lord: this.state.name, level: this.state.realmIdx, density: target.density, at: serverTimestamp() });
+                
+                await setDoc(doc(db, "map", `tile_${id}`), { 
+                    lord: this.state.name, 
+                    level: this.state.realmIdx, 
+                    density: target.density, 
+                    at: serverTimestamp() 
+                });
+                
                 this.state.pos = id;
-                localStorage.setItem(SAVE_KEY, JSON.stringify(this.state));
+                this.addLog(`<span class="text-cyan-400">You have occupied a new spiritual vein (${target.density}x).</span>`);
+                this.save();
             },
 
             listenToMap() {
@@ -274,87 +334,129 @@
                     const tRow = Math.floor(tile.id / 5);
                     const tCol = tile.id % 5;
                     const isVisible = Math.abs(myRow - tRow) <= 1 && Math.abs(myCol - tCol) <= 1;
-                    const isMe = tile.lord === this.state.name;
+                    const isMe = tile.id === this.state.pos;
                     
                     const div = document.createElement('div');
-                    div.className = `tile ${isMe ? 'tile-active' : ''} ${!isVisible && !isMe ? 'fog' : (tile.lord ? 'bg-purple-900/20' : 'bg-black/40')}`;
+                    div.className = `tile ${isMe ? 'tile-active' : ''} ${!isVisible ? 'fog' : (tile.lord ? 'bg-purple-900/30' : 'bg-black/40')}`;
                     
-                    if (isVisible || isMe) {
-                        div.innerHTML = `<span class="text-gray-500">${tile.density.toFixed(1)}x</span>
-                                         <span class="truncate w-full text-center font-bold" style="color:${tile.lord ? '#a855f7' : '#444'}">${tile.lord || 'Empty'}</span>`;
+                    if (isVisible) {
+                        div.innerHTML = `<span class="text-gray-500 font-mono">${tile.density.toFixed(1)}x</span>
+                                         <span class="truncate w-full px-1 text-center font-bold" style="color:${tile.lord ? '#a855f7' : '#444'}">${tile.lord || 'Empty'}</span>`;
+                        div.onclick = () => this.occupyTile(tile.id);
                     } else {
-                        div.innerHTML = `<span class="text-gray-700">???</span>`;
+                        div.innerHTML = `<span class="text-gray-800">???</span>`;
                     }
-                    div.onclick = () => this.occupyTile(tile.id);
                     container.appendChild(div);
                 });
             },
 
             randomEvent() {
                 const modal = document.getElementById('event-modal');
-                const e = [{ t: "Sacred Herb", d: "Consume it?", o1: "Eat (Qi)", o2: "Plant (Karma)", r1: () => this.state.qi += 1000, r2: () => this.state.karma += 100 }][0];
-                document.getElementById('event-title').innerText = e.t; document.getElementById('event-desc').innerText = e.d;
-                document.getElementById('event-opt1').innerText = e.o1; document.getElementById('event-opt2').innerText = e.o2;
+                const events = [
+                    { t: "Sacred Herb", d: "You find a glowing herb in the mist. Consume it?", o1: "Refine it (Qi)", o2: "Plant it (Karma)", r1: () => this.state.qi += (this.realms[this.state.realmIdx].req * 0.1), r2: () => this.state.karma += 50 },
+                    { t: "Ancient Tablet", d: "A crumbling stone tablet holds forgotten secrets.", o1: "Study (Qi)", o2: "Transcribe (Karma)", r1: () => this.state.qi += (this.realms[this.state.realmIdx].req * 0.15), r2: () => this.state.karma += 30 }
+                ];
+                const e = events[Math.floor(Math.random()*events.length)];
+                
+                document.getElementById('event-title').innerText = e.t; 
+                document.getElementById('event-desc').innerText = e.d;
+                document.getElementById('event-opt1').innerText = e.o1; 
+                document.getElementById('event-opt2').innerText = e.o2;
+                
                 modal.style.display = 'flex';
-                document.getElementById('event-opt1').onclick = () => { e.r1(); modal.style.display = 'none'; };
-                document.getElementById('event-opt2').onclick = () => { e.r2(); modal.style.display = 'none'; };
+                document.getElementById('event-opt1').onclick = () => { e.r1(); modal.style.display = 'none'; this.render(); };
+                document.getElementById('event-opt2').onclick = () => { e.r2(); modal.style.display = 'none'; this.render(); };
             },
 
             die() {
                 this.state.karma += this.state.realmIdx * 20;
+                document.getElementById('karma-gain').innerText = this.state.realmIdx * 20;
                 document.getElementById('reincarnation-screen').style.display = 'flex';
-                document.getElementById('death-msg').innerText = `${this.state.name} has died.`;
+                document.getElementById('death-msg').innerText = `${this.state.name} has exhausted their lifespan as a ${this.realms[this.state.realmIdx].name}.`;
             },
 
             reincarnate(mult, cost) {
-                if (this.state.karma < cost) return alert("Low Karma!");
-                this.state.karma -= cost; this.state.rootMult = mult; this.state.age = 18; this.state.maxAge = 100; this.state.realmIdx = 0; this.state.qi = 0;
-                this.state.upgrades = { spirit: 0, tech: 0 }; this.state.techniqueChosen = false; this.state.pos = Math.floor(Math.random() * 25);
+                if (this.state.karma < cost) return alert("You lack the Karma for this rebirth!");
+                this.state.karma -= cost; 
+                this.state.rootMult = mult; 
+                this.state.age = 18; 
+                this.state.maxAge = 100; 
+                this.state.realmIdx = 0; 
+                this.state.qi = 0;
+                this.state.upgrades = { spirit: 0, tech: 0 }; 
+                this.state.techniqueChosen = false; 
+                this.state.pos = Math.floor(Math.random() * 25);
+                
                 document.getElementById('reincarnation-screen').style.display = 'none';
                 document.getElementById('technique-screen').style.display = 'flex';
+                this.save();
+                this.addLog(`<span class="text-yellow-400 font-bold">--- A NEW LIFE BEGINS ---</span>`);
             },
 
             render(rate = 0) {
                 const r = this.realms[this.state.realmIdx];
+                let successMod = this.state.technique === 'turtle' ? 1.5 : (this.state.technique === 'phoenix' ? 0.8 : 1.0);
+                
                 document.getElementById('p-name').innerText = this.state.name;
                 document.getElementById('p-realm').innerText = r.name;
                 document.getElementById('p-tech').innerText = "Path: " + this.state.technique;
                 document.getElementById('qi-val').innerText = Math.floor(this.state.qi).toLocaleString();
-                document.getElementById('qi-bar').style.width = (this.state.qi / r.req * 100) + "%";
+                document.getElementById('qi-bar').style.width = (Math.min(100, (this.state.qi / r.req * 100))) + "%";
                 document.getElementById('age').innerText = Math.floor(this.state.age);
                 document.getElementById('maxAge').innerText = Math.floor(this.state.maxAge);
-                document.getElementById('karma').innerText = this.state.karma;
+                document.getElementById('karma').innerText = Math.floor(this.state.karma);
                 document.getElementById('root').innerText = this.state.rootMult.toFixed(1) + "x";
                 document.getElementById('rate-val').innerText = Math.floor(rate).toLocaleString();
+                document.getElementById('success-val').innerText = (r.chance * successMod * 100).toFixed(0) + "%";
+                
                 document.documentElement.style.setProperty('--realm-color', r.color);
                 document.getElementById('break-btn').style.display = (this.state.qi >= r.req) ? 'block' : 'none';
             },
 
             addLog(msg) {
                 const log = document.getElementById('log');
-                log.innerHTML = `<div class="border-l-2 border-purple-500 pl-2 mb-1">${msg}</div>` + log.innerHTML;
+                const div = document.createElement('div');
+                div.className = "border-l-2 border-purple-500 pl-2 mb-1";
+                div.innerHTML = msg;
+                log.prepend(div);
+                if (log.children.length > 50) log.lastChild.remove();
             },
 
             listenToLeaderboard() {
                 onSnapshot(query(collection(db, "highscores"), orderBy("level", "desc"), limit(10)), (sn) => {
-                    const list = document.getElementById('leaderboard-list'); list.innerHTML = "";
+                    const list = document.getElementById('leaderboard-list'); 
+                    list.innerHTML = "";
                     sn.forEach(d => {
                         const data = d.data();
-                        list.innerHTML += `<li class="p-2 bg-white/5 rounded border-l-2 border-purple-500 text-xs"><b>${data.player}</b><br><span class="text-yellow-500">${data.realm}</span></li>`;
+                        list.innerHTML += `<li class="p-3 bg-white/5 rounded-xl border-l-4 border-purple-500 text-xs shadow-md">
+                            <b class="text-purple-300 text-sm">${data.player}</b><br>
+                            <span class="text-yellow-500 font-bold uppercase tracking-tighter">${data.realm}</span>
+                        </li>`;
                     });
                 });
             },
 
             setupNetwork() {
                 onSnapshot(query(collection(db, "messages"), orderBy("createdAt", "desc"), limit(15)), (sn) => {
-                    const chat = document.getElementById('chat'); chat.innerHTML = "";
-                    sn.forEach(d => { chat.innerHTML += `<div><b class="text-purple-400">${d.data().user}</b>: <span class="text-gray-400">${d.data().text}</span></div>`; });
+                    const chat = document.getElementById('chat'); 
+                    chat.innerHTML = "";
+                    sn.forEach(d => { 
+                        chat.innerHTML += `<div class="bg-white/5 p-2 rounded-lg">
+                            <b class="text-purple-400 font-bold">${d.data().user}</b>: 
+                            <span class="text-gray-300">${d.data().text}</span>
+                        </div>`; 
+                    });
                 });
+
                 document.getElementById('chat-form').onsubmit = async (e) => {
                     e.preventDefault();
                     const input = document.getElementById('chat-input');
                     if (!input.value.trim()) return;
-                    await addDoc(collection(db, "messages"), { user: this.state.name, text: input.value, createdAt: serverTimestamp() });
+                    await addDoc(collection(db, "messages"), { 
+                        user: this.state.name, 
+                        text: input.value, 
+                        createdAt: serverTimestamp() 
+                    });
                     input.value = "";
                 };
             }
