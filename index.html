@@ -145,7 +145,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        // ADDED doc and setDoc to handle unique entry updates
+        import { getFirestore, collection, addDoc, doc, setDoc, query, orderBy, limit, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyD7N-ZUGKm9hasgM0DD08scouydEEuiLvU",
@@ -165,7 +166,7 @@
                 name: "", qi: 0, realmIdx: 0, age: 18, maxAge: 100,
                 upgrades: { spirit: 0, tech: 0 },
                 karma: 0, rootMult: 1, lastTick: Date.now(),
-                technique: "dao" // default
+                technique: "dao"
             },
             realms: [
                 "Mortal Body", "Refined Body", "Tempered Flesh", "Bone Forging", "Blood Circulation", "Muscle Cleansing", "Meridian Awakening", "Qi Sense", "Qi Initiation", "Qi Condensation", "Qi Gathering", "Qi Foundation", "Qi Stabilization",
@@ -254,7 +255,14 @@
                     this.state.qi = 0;
                     this.state.maxAge += 50;
                     this.addLog(`<span class="text-yellow-400">★ Breakthrough: ${this.realms[this.state.realmIdx].name}</span>`);
-                    await addDoc(collection(db, "highscores"), { player: this.state.name, realm: this.realms[this.state.realmIdx].name, level: this.state.realmIdx, createdAt: serverTimestamp() });
+                    
+                    // FIXED: Uses setDoc with name as ID to update existing entry instead of adding new ones
+                    await setDoc(doc(db, "highscores", this.state.name), { 
+                        player: this.state.name, 
+                        realm: this.realms[this.state.realmIdx].name, 
+                        level: this.state.realmIdx, 
+                        updatedAt: serverTimestamp() 
+                    });
                 } else {
                     this.state.qi *= 0.5;
                     this.addLog(`<span class="text-red-500">⚡ Tribulation Failure! Qi scattered.</span>`);
