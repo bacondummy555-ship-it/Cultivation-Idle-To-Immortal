@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Path to Immortality | Absolute Apex</title>
+    <title>Path to Immortality</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --realm-color: #4c1d95; --glow: rgba(139, 92, 246, 0.5); }
@@ -42,7 +42,6 @@
 
     <div id="auth-container" class="fixed inset-0 bg-black/90 z-[90] hidden flex items-center justify-center p-6">
         <div class="mystic-border p-8 rounded-3xl w-full max-w-md">
-            
             <div id="login-form">
                 <h2 class="text-2xl font-bold mb-6 text-center text-purple-400 font-serif">Divine Login</h2>
                 <div class="space-y-4">
@@ -50,12 +49,11 @@
                     <input type="password" placeholder="Password" class="auth-input" id="login-pass">
                     <button id="login-btn" onclick="game.handleLogin()" class="btn-primary">ENTER THE DAO</button>
                     <div class="flex justify-between text-xs text-gray-500 px-1">
-                        <button onclick="game.switchAuth('register')" class="hover:text-purple-400">Create Soul</button>
-                        <button onclick="game.switchAuth('forgot')" class="hover:text-purple-400">Severed Memory?</button>
+                        <button onclick="game.switchAuth('register')" class="hover:text-purple-400">Create Account</button>
+                        <button onclick="game.switchAuth('forgot')" class="hover:text-purple-400">Forgot</button>
                     </div>
                 </div>
             </div>
-
             <div id="register-form" class="hidden">
                 <h2 class="text-2xl font-bold mb-6 text-center text-green-400 font-serif">New Incarnation</h2>
                 <div class="space-y-4">
@@ -66,7 +64,6 @@
                     <button onclick="game.switchAuth('login')" class="w-full text-xs text-gray-500 mt-2 hover:text-purple-400">Return to Void</button>
                 </div>
             </div>
-
             <div id="forgot-form" class="hidden">
                 <h2 class="text-2xl font-bold mb-6 text-center text-yellow-500 font-serif">Restore Tether</h2>
                 <div class="space-y-4">
@@ -80,6 +77,7 @@
     </div>
 
     <div id="game-ui" class="opacity-0 transition-opacity duration-1000">
+        
         <div id="technique-screen" class="fixed inset-0 bg-black/95 z-[60] hidden flex-col items-center justify-center p-6 text-center backdrop-blur-md">
             <h2 class="text-4xl font-bold text-purple-500 mb-2 tracking-tighter">Choose Your Technique</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl">
@@ -164,6 +162,15 @@
                 </div>
             </div>
         </div>
+
+        <div id="admin-panel" class="hidden fixed bottom-4 left-4 z-[100] bg-red-950/90 border border-red-500 p-4 rounded-xl max-w-xs shadow-2xl">
+            <h3 class="text-red-500 font-bold mb-2 text-xs uppercase tracking-tighter">Heavenly Overseer Console</h3>
+            <div class="space-y-2">
+                <button onclick="game.adminResetMap()" class="w-full bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold py-2 rounded">WIPE WORLD MAP</button>
+                <button onclick="game.adminAddKarma()" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-2 rounded">GIVE SELF 10,000 KARMA</button>
+                <p class="text-[9px] text-red-300 mt-2">Active Administrator Detected</p>
+            </div>
+        </div>
     </div>
 
     <script type="module">
@@ -209,7 +216,6 @@
             })),
 
             init() {
-                // Initial Loading Progress
                 let prog = 0;
                 const interval = setInterval(() => {
                     prog += 10;
@@ -218,7 +224,7 @@
                         clearInterval(interval);
                         this.checkSession();
                     }
-                }, 150);
+                }, 100);
             },
 
             checkSession() {
@@ -226,6 +232,7 @@
                     if (user) {
                         this.currentUser = user;
                         this.state.name = user.displayName || "Unknown Daoist";
+                        this.checkAdminStatus(user);
                         this.startGame();
                     } else {
                         document.getElementById('loading-screen').style.display = 'none';
@@ -234,7 +241,14 @@
                 });
             },
 
-            // --- AUTH HANDLERS ---
+            checkAdminStatus(user) {
+                const ADMIN_UID = "AGR9whqSLbQPefvXPUC4AMX5Fld2"; // <--- PUT YOUR UID HERE
+                if (user.uid === ADMIN_UID) {
+                    const panel = document.getElementById('admin-panel');
+                    if (panel) panel.classList.remove('hidden');
+                }
+            },
+
             async handleLogin() {
                 const email = document.getElementById('login-email').value;
                 const pass = document.getElementById('login-pass').value;
@@ -249,49 +263,40 @@
                 const name = document.getElementById('reg-name').value;
                 const email = document.getElementById('reg-email').value;
                 const pass = document.getElementById('reg-pass').value;
-                const btn = document.getElementById('reg-btn');
                 if (!name) return alert("Heaven requires a name.");
                 try {
-                    btn.disabled = true;
                     const res = await createUserWithEmailAndPassword(auth, email, pass);
                     await updateProfile(res.user, { displayName: name });
-                    location.reload(); // Refresh to trigger session check
-                } catch (e) { alert(e.message); btn.disabled = false; }
+                    location.reload();
+                } catch (e) { alert(e.message); }
             },
 
             async handleForgot() {
                 const email = document.getElementById('forgot-email').value;
                 try {
                     await sendPasswordResetEmail(auth, email);
-                    alert("A spiritual tether (reset link) has been sent.");
-                    this.switchAuth('login');
+                    alert("Divine link sent to email.");
                 } catch (e) { alert(e.message); }
             },
 
             signOut() { signOut(auth).then(() => location.reload()); },
 
             switchAuth(view) {
-                document.getElementById('login-form').classList.add('hidden');
-                document.getElementById('register-form').classList.add('hidden');
-                document.getElementById('forgot-form').classList.add('hidden');
+                ['login', 'register', 'forgot'].forEach(v => document.getElementById(`${v}-form`).classList.add('hidden'));
                 document.getElementById(`${view}-form`).classList.remove('hidden');
             },
 
-            // --- GAME LOGIC ---
             startGame() {
                 document.getElementById('loading-screen').style.display = 'none';
                 document.getElementById('auth-container').style.display = 'none';
                 document.getElementById('game-ui').style.opacity = '1';
-
                 const saved = localStorage.getItem(SAVE_KEY_PREFIX + this.currentUser.uid);
                 if (saved) this.state = {...this.state, ...JSON.parse(saved)};
                 if (this.state.pos === -1) this.state.pos = Math.floor(Math.random() * 25);
-
                 this.setupNetwork();
                 this.listenToLeaderboard();
                 this.listenToMap();
                 if (!this.state.techniqueChosen) document.getElementById('technique-screen').style.display = 'flex';
-
                 setInterval(() => this.tick(), 100);
                 setInterval(() => this.save(), 5000);
                 this.render();
@@ -336,11 +341,11 @@
                 let successMod = this.state.technique === 'turtle' ? 1.5 : (this.state.technique === 'phoenix' ? 0.8 : 1.0);
                 if (Math.random() <= (r.chance * successMod)) {
                     this.state.realmIdx++; this.state.qi = 0; this.state.maxAge += 50;
-                    this.addLog(`<span class="text-green-400 font-bold">SUCCESS! You are a ${this.realms[this.state.realmIdx].name}!</span>`);
+                    this.addLog(`<span class="text-green-400">Advanced to ${this.realms[this.state.realmIdx].name}!</span>`);
                     await setDoc(doc(db, "highscores", this.currentUser.uid), { player: this.state.name, realm: this.realms[this.state.realmIdx].name, level: this.state.realmIdx, updatedAt: serverTimestamp() });
                 } else {
                     this.state.qi *= 0.5;
-                    this.addLog(`<span class="text-red-500 font-bold">FAILURE! Qi dispersed!</span>`);
+                    this.addLog(`<span class="text-red-500">Breakthrough Failed!</span>`);
                 }
                 this.save();
             },
@@ -352,13 +357,9 @@
                 const tRow = Math.floor(id / 5); const tCol = id % 5;
                 if (Math.abs(myRow - tRow) > 1 || Math.abs(myCol - tCol) > 1) return;
                 if (target.lord === this.state.name) return;
-                
                 if (target.lord) {
                     let win = this.state.realmIdx > target.level || (this.state.realmIdx === target.level && this.state.qi > (target.lordQi || 0));
-                    if (!win) {
-                        this.state.qi *= 0.7; this.state.moveCooldown = 5;
-                        return this.addLog(`<span class="text-red-500">Defeated by ${target.lord}!</span>`);
-                    }
+                    if (!win) { this.state.qi *= 0.7; this.state.moveCooldown = 5; return; }
                 }
                 await setDoc(doc(db, "map", `tile_${id}`), { lord: this.state.name, level: this.state.realmIdx, lordQi: this.state.qi, density: target.density, at: serverTimestamp() });
                 this.state.pos = id;
@@ -392,6 +393,19 @@
                 });
             },
 
+            async adminResetMap() {
+                if(!confirm("Wipe all lords?")) return;
+                const promises = this.mapData.map((tile, i) => {
+                    return setDoc(doc(db, "map", `tile_${i}`), { lord: null, level: 0, lordQi: 0, density: 1 + (i % 5 * 0.5), at: serverTimestamp() });
+                });
+                await Promise.all(promises);
+                alert("Map Reset.");
+            },
+
+            adminAddKarma() {
+                this.state.karma += 10000; this.save(); this.render();
+            },
+
             die() {
                 this.state.isDead = true; this.state.karma += this.state.realmIdx * 20;
                 document.getElementById('karma-gain').innerText = this.state.realmIdx * 20;
@@ -399,7 +413,7 @@
             },
 
             reincarnate(mult, cost) {
-                if (this.state.karma < cost) return alert("Insufficient Karma!");
+                if (this.state.karma < cost) return alert("Low Karma");
                 this.state.karma -= cost; this.state.rootMult = mult; this.state.age = 18; this.state.maxAge = 100; this.state.realmIdx = 0; this.state.qi = 0; this.state.techniqueChosen = false; this.state.isDead = false;
                 document.getElementById('reincarnation-screen').style.display = 'none';
                 document.getElementById('technique-screen').style.display = 'flex';
