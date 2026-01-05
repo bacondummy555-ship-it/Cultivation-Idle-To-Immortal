@@ -6,8 +6,9 @@
     <title>Path to Immortality | Cultivation Idle</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #0a0a0c; color: #e2e8f0; font-family: 'Georgia', serif; }
-        .qi-gradient { background: linear-gradient(135deg, #4c1d95 0%, #1e1b4b 100%); }
+        :root { --realm-color: #4c1d95; }
+        body { background-color: #0a0a0c; color: #e2e8f0; font-family: 'Georgia', serif; transition: background 2s ease; }
+        .qi-gradient { background: linear-gradient(135deg, var(--realm-color) 0%, #1e1b4b 100%); }
         .progress-bar { transition: width 0.2s ease-out; }
         .mystic-border { border: 1px solid rgba(139, 92, 246, 0.3); }
         @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
@@ -15,6 +16,7 @@
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-thumb { background: #4c1d95; border-radius: 10px; }
         #chat-messages { height: 200px; overflow-y: auto; display: flex; flex-direction: column-reverse; }
+        .announcement { color: #facc15; font-weight: bold; border-left: 2px solid #facc15; padding-left: 8px; margin: 4px 0; background: rgba(250, 204, 21, 0.1); }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -25,6 +27,7 @@
                 <span>Cultivator: <b id="player-name-display" class="text-purple-300">...</b></span>
                 <span>Realm: <b id="realm" class="text-yellow-500">Mortal</b></span>
                 <span>Lifespan: <span id="age">18</span> / <span id="maxAge">100</span> Years</span>
+                <span>Karma: <b id="karma-display" class="text-green-400">0</b></span>
             </div>
         </header>
 
@@ -40,7 +43,7 @@
                 </div>
                 <div class="space-y-2 text-sm">
                     <div class="flex justify-between"><span>Absorption:</span> <span id="rate">1.0</span>/s</div>
-                    <div class="flex justify-between"><span>Spirit Root:</span> <span class="text-green-400">Grade D</span></div>
+                    <div class="flex justify-between"><span>Spirit Root:</span> <span id="root-grade" class="text-green-400">Grade D</span></div>
                 </div>
             </div>
 
@@ -67,8 +70,7 @@
 
                 <div class="mystic-border bg-gray-900/50 rounded-xl overflow-hidden flex flex-col">
                     <div class="bg-purple-900/20 p-2 text-xs font-bold border-b border-purple-900/50 text-purple-400 uppercase tracking-widest">Global Daoist Square</div>
-                    <div id="chat-messages" class="p-4 space-y-2 text-sm">
-                        </div>
+                    <div id="chat-messages" class="p-4 space-y-2 text-sm"></div>
                     <form id="chat-form" class="flex border-t border-purple-900/50">
                         <input type="text" id="chat-input" placeholder="Transmit your thoughts..." class="flex-grow bg-black/50 p-2 outline-none text-sm focus:bg-black/80 transition" maxlength="100">
                         <button type="submit" class="bg-purple-900/40 px-4 hover:bg-purple-800 transition text-xs font-bold">SEND</button>
@@ -110,7 +112,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- PARTICLE SYSTEM --- (Existing)
+        // --- PARTICLE SYSTEM ---
         const canvas = document.getElementById('particleCanvas');
         const ctx = canvas.getContext('2d');
         canvas.width = canvas.offsetWidth;
@@ -151,28 +153,27 @@
                 qiRate: 0,
                 age: 18,
                 maxAge: 100,
+                karma: parseInt(localStorage.getItem('karma')) || 0,
+                rootGrade: parseInt(localStorage.getItem('rootGrade')) || 1, // 1=D, 2=C, etc
                 upgrades: { spirit: 0 },
                 lastTick: Date.now()
             },
             realms: [
-                { name: "Mortal", requirement: 100 },
-                { name: "Qi Condensation", requirement: 1000 },
-                { name: "Foundation", requirement: 10000 },
-                { name: "Core Formation", requirement: 100000 },
-                { name: "Nascent Soul", requirement: 1000000 }
+                { name: "Mortal", requirement: 100, color: "#4c1d95" },
+                { name: "Qi Condensation", requirement: 1000, color: "#1e40af" },
+                { name: "Foundation", requirement: 10000, color: "#065f46" },
+                { name: "Core Formation", requirement: 100000, color: "#92400e" },
+                { name: "Nascent Soul", requirement: 1000000, color: "#991b1b" }
             ],
+            rootNames: ["F", "D", "C", "B", "A", "S", "Heavenly"],
             init() {
                 if (!this.state.playerName) {
                     const name = prompt("Enter your Cultivator Name:", "Humble Daoist");
                     this.state.playerName = name || "Anonymous";
                     localStorage.setItem('playerName', this.state.playerName);
                 }
-
                 const saved = localStorage.getItem('cultivationSave');
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    Object.assign(this.state, parsed);
-                }
+                if (saved) Object.assign(this.state, JSON.parse(saved));
                 
                 this.listenToLeaderboard();
                 this.listenToChat();
@@ -183,7 +184,11 @@
                 const now = Date.now();
                 const dt = (now - this.state.lastTick) / 1000;
                 this.state.lastTick = now;
-                if (this.state.qiRate > 0) this.gainQi(this.state.qiRate * dt);
+                
+                // Multiplier based on Spirit Root Grade
+                const rootMultiplier = 1 + (this.state.rootGrade * 0.5);
+                if (this.state.qiRate > 0) this.gainQi(this.state.qiRate * dt * rootMultiplier);
+                
                 this.state.age += dt / 60;
                 if (this.state.age >= this.state.maxAge) this.resetGame();
                 this.render();
@@ -192,7 +197,10 @@
                 const req = this.realms[this.state.realmIndex].requirement;
                 this.state.qi = Math.min(req, this.state.qi + amount);
             },
-            manualMeditate() { this.gainQi(1 + (this.state.realmIndex * 5)); },
+            manualMeditate() { 
+                const rootMultiplier = 1 + (this.state.rootGrade * 0.5);
+                this.gainQi((1 + (this.state.realmIndex * 5)) * rootMultiplier); 
+            },
             buyUpgrade(type) {
                 const cost = 10 * Math.pow(1.5, this.state.upgrades[type]);
                 if (this.state.qi >= cost) {
@@ -203,15 +211,18 @@
                 }
             },
             async breakthrough() {
-                const req = this.realms[this.state.realmIndex].requirement;
-                if (this.state.qi >= req) {
+                const currentRealm = this.realms[this.state.realmIndex];
+                if (this.state.qi >= currentRealm.requirement) {
                     if (Math.random() > 0.2) {
                         this.state.realmIndex++;
                         this.state.qi = 0;
                         this.state.maxAge += 100;
-                        this.addLog(`SUCCESS! You reached ${this.realms[this.state.realmIndex].name}!`);
+                        this.state.karma += (this.state.realmIndex * 10); // Gain Karma
                         
-                        // Update Leaderboard immediately upon breakthrough
+                        this.addLog(`SUCCESS! You reached ${this.realms[this.state.realmIndex].name}!`);
+                        document.body.style.background = currentRealm.color;
+                        
+                        // 1. Update Leaderboard
                         try {
                             await addDoc(collection(db, "highscores"), {
                                 player: this.state.playerName,
@@ -219,9 +230,16 @@
                                 level: this.state.realmIndex,
                                 createdAt: serverTimestamp()
                             });
+                            // 2. World Announcement
+                            await addDoc(collection(db, "messages"), {
+                                user: "SYSTEM",
+                                text: `⚡ The heavens tremble! ${this.state.playerName} has broken through to the ${this.realms[this.state.realmIndex].name} realm!`,
+                                isAnnouncement: true,
+                                createdAt: serverTimestamp()
+                            });
                         } catch (e) { console.error(e); }
                     } else {
-                        this.state.qi -= (req * 0.4);
+                        this.state.qi -= (currentRealm.requirement * 0.4);
                         this.addLog("TRIBULATION FAILED! Lost 40% Qi.");
                     }
                     this.saveGame();
@@ -234,10 +252,15 @@
                 document.getElementById('qi-bar').style.width = (this.state.qi / current.requirement * 100) + "%";
                 document.getElementById('realm').innerText = current.name;
                 document.getElementById('qi-needed').innerText = current.requirement;
-                document.getElementById('rate').innerText = this.state.qiRate.toFixed(1);
+                document.getElementById('rate').innerText = (this.state.qiRate * (1 + this.state.rootGrade * 0.5)).toFixed(1);
                 document.getElementById('age').innerText = Math.floor(this.state.age);
                 document.getElementById('maxAge').innerText = this.state.maxAge;
+                document.getElementById('karma-display').innerText = this.state.karma;
+                document.getElementById('root-grade').innerText = `Grade ${this.rootNames[this.state.rootGrade]}`;
                 document.getElementById('upg-spirit-cost').innerText = Math.floor(10 * Math.pow(1.5, this.state.upgrades.spirit));
+                
+                document.documentElement.style.setProperty('--realm-color', current.color);
+                
                 const btn = document.getElementById('btn-breakthrough');
                 if (this.state.qi >= current.requirement && this.state.realmIndex < this.realms.length - 1) btn.classList.remove('hidden');
                 else btn.classList.add('hidden');
@@ -246,13 +269,23 @@
                 const log = document.getElementById('log');
                 log.innerHTML = `<p>> ${msg}</p>` + log.innerHTML;
             },
-            saveGame() { localStorage.setItem('cultivationSave', JSON.stringify(this.state)); },
+            saveGame() { 
+                localStorage.setItem('cultivationSave', JSON.stringify(this.state)); 
+                localStorage.setItem('karma', this.state.karma);
+                localStorage.setItem('rootGrade', this.state.rootGrade);
+            },
             resetGame() { 
+                // Karma Shop / Reincarnation logic
+                let upgradeRoot = confirm(`Your life ends. You have ${this.state.karma} Karma. Spend 50 Karma to improve your Spirit Root for your next life?`);
+                if(upgradeRoot && this.state.karma >= 50) {
+                    this.state.rootGrade++;
+                    this.state.karma -= 50;
+                }
                 this.addLog("Returning to the cycle of reincarnation...");
+                localStorage.setItem('karma', this.state.karma);
+                localStorage.setItem('rootGrade', this.state.rootGrade);
                 setTimeout(() => { localStorage.removeItem('cultivationSave'); location.reload(); }, 2000);
             },
-            
-            // --- FIREBASE FEATURES ---
             listenToLeaderboard() {
                 const q = query(collection(db, "highscores"), orderBy("level", "desc"), limit(10));
                 onSnapshot(q, (snapshot) => {
@@ -275,7 +308,12 @@
                     snapshot.forEach(doc => {
                         const data = doc.data();
                         const div = document.createElement('div');
-                        div.innerHTML = `<span class="text-purple-400 font-bold">${data.user}:</span> <span class="text-gray-300">${data.text}</span>`;
+                        if(data.isAnnouncement) {
+                            div.className = "announcement";
+                            div.innerText = data.text;
+                        } else {
+                            div.innerHTML = `<span class="text-purple-400 font-bold">${data.user}:</span> <span class="text-gray-300">${data.text}</span>`;
+                        }
                         chatContainer.appendChild(div);
                     });
                 });
