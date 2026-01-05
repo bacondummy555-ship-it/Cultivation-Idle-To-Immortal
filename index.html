@@ -21,6 +21,7 @@
         <header class="text-center mb-8">
             <h1 class="text-4xl font-bold text-purple-400 mb-2">Immortal Path</h1>
             <div class="flex justify-center gap-4 text-sm text-gray-400">
+                <span>Cultivator: <b id="player-name-display" class="text-purple-300">...</b></span>
                 <span>Realm: <b id="realm" class="text-yellow-500">Mortal</b></span>
                 <span>Lifespan: <span id="age">18</span> / <span id="maxAge">100</span> Years</span>
             </div>
@@ -45,7 +46,6 @@
             <div class="lg:col-span-2 flex flex-col gap-6">
                 <div class="mystic-border bg-gray-900/80 p-12 rounded-xl text-center relative overflow-hidden h-64 flex items-center justify-center">
                     <canvas id="particleCanvas" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
-                    
                     <div class="meditate-anim relative z-10">
                         <button onclick="window.game.manualMeditate()" class="bg-purple-700 hover:bg-purple-600 px-10 py-4 rounded-full font-bold transition-all active:scale-95 shadow-[0_0_20px_rgba(139,92,246,0.4)]">
                             Gather Qi
@@ -59,8 +59,8 @@
                         <div class="text-sm font-mono text-yellow-500">Cost: <span id="upg-spirit-cost">10</span> Qi</div>
                     </button>
                     <button onclick="window.game.breakthrough()" id="btn-breakthrough" class="hidden mystic-border p-4 rounded-lg bg-yellow-900/20 border-yellow-500/50 hover:bg-yellow-900/40 text-left transition border-dashed">
-                        <div class="font-bold text-yellow-400">Ascend Realm</div>
-                        <div class="text-xs text-gray-300">Click to Breakthrough!</div>
+                        <div class="font-bold text-yellow-400">Face Tribulation</div>
+                        <div class="text-xs text-gray-300 italic">80% Success Rate</div>
                     </button>
                 </div>
             </div>
@@ -133,17 +133,16 @@
 
         // --- GAME LOGIC ---
         window.game = {
-           window.game = {
-    state: {
-        playerName: localStorage.getItem('playerName') || "", // <-- ADD THIS
-        qi: 0, 
-        realmIndex: 0, 
-        qiRate: 0, 
-        age: 18, 
-        maxAge: 100, 
-        upgrades: { spirit: 0 }, 
-        lastTick: Date.now()
-    },
+            state: {
+                playerName: localStorage.getItem('playerName') || "",
+                qi: 0,
+                realmIndex: 0,
+                qiRate: 0,
+                age: 18,
+                maxAge: 100,
+                upgrades: { spirit: 0 },
+                lastTick: Date.now()
+            },
             realms: [
                 { name: "Mortal", requirement: 100 },
                 { name: "Qi Condensation", requirement: 1000 },
@@ -152,8 +151,19 @@
                 { name: "Nascent Soul", requirement: 1000000 }
             ],
             init() {
+                // Get Name
+                if (!this.state.playerName) {
+                    const name = prompt("Enter your Cultivator Name:", "Humble Daoist");
+                    this.state.playerName = name || "Anonymous";
+                    localStorage.setItem('playerName', this.state.playerName);
+                }
+
                 const saved = localStorage.getItem('cultivationSave');
-                if (saved) Object.assign(this.state, JSON.parse(saved));
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    Object.assign(this.state, parsed);
+                }
+                
                 this.listenToLeaderboard();
                 setInterval(() => this.update(), 100);
             },
@@ -183,22 +193,33 @@
             async breakthrough() {
                 const req = this.realms[this.state.realmIndex].requirement;
                 if (this.state.qi >= req) {
-                    this.state.realmIndex++;
-                    this.state.qi = 0;
-                    this.state.maxAge += 100;
-                    this.addLog(`Breakthrough to ${this.realms[this.state.realmIndex].name}!`);
-                    this.saveGame();
-                    // Post to Online Leaderboard
-                    await addDoc(collection(db, "highscores"), {
-                        player: "Cultivator_" + Math.floor(Math.random()*1000),
-                        realm: this.realms[this.state.realmIndex].name,
-                        level: this.state.realmIndex,
-                        createdAt: serverTimestamp()
-                    });
+                    // 80% Success Rate for Tribulation
+                    if (Math.random() > 0.2) {
+                        this.state.realmIndex++;
+                        this.state.qi = 0;
+                        this.state.maxAge += 100;
+                        this.addLog(`SUCCESS! You survived the tribulation to reach ${this.realms[this.state.realmIndex].name}!`);
+                        
+                        this.saveGame();
+
+                        try {
+                            await addDoc(collection(db, "highscores"), {
+                                player: this.state.playerName,
+                                realm: this.realms[this.state.realmIndex].name,
+                                level: this.state.realmIndex,
+                                createdAt: serverTimestamp()
+                            });
+                        } catch (e) { console.error(e); }
+                    } else {
+                        this.state.qi -= (req * 0.4);
+                        this.addLog("TRIBULATION FAILED! The heavens rejected you. You lost 40% Qi.");
+                        this.saveGame();
+                    }
                 }
             },
             render() {
                 const current = this.realms[this.state.realmIndex];
+                document.getElementById('player-name-display').innerText = this.state.playerName;
                 document.getElementById('qi-display').innerText = Math.floor(this.state.qi);
                 document.getElementById('qi-bar').style.width = (this.state.qi / current.requirement * 100) + "%";
                 document.getElementById('realm').innerText = current.name;
@@ -216,7 +237,13 @@
                 log.innerHTML = `<p>> ${msg}</p>` + log.innerHTML;
             },
             saveGame() { localStorage.setItem('cultivationSave', JSON.stringify(this.state)); },
-            resetGame() { localStorage.removeItem('cultivationSave'); location.reload(); },
+            resetGame() { 
+                this.addLog("Your lifespan has ended. Returning to the cycle of reincarnation...");
+                setTimeout(() => {
+                    localStorage.removeItem('cultivationSave'); 
+                    location.reload(); 
+                }, 2000);
+            },
             listenToLeaderboard() {
                 const q = query(collection(db, "highscores"), orderBy("level", "desc"), limit(8));
                 onSnapshot(q, (snapshot) => {
